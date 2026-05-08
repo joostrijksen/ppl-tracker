@@ -1346,7 +1346,7 @@ async function saveWeight() {
   await saveWeightToDb(today, val);
   input.value = '';
   showToast('✅ Gewicht opgeslagen!');
-  renderProgress();
+  await renderProgress();
 }
 
 function addProgressPhoto(input) {
@@ -1359,7 +1359,7 @@ function addProgressPhoto(input) {
     const todayWeight = wh.slice().reverse().find(w => w.date <= today)?.weight || null;
     await savePhotoToDb(today, todayWeight, e.target.result);
     showToast('📸 Foto opgeslagen!');
-    renderProgress();
+    await renderProgress();
   };
   reader.readAsDataURL(file);
 }
@@ -1367,7 +1367,7 @@ function addProgressPhoto(input) {
 async function deletePhoto(id) {
   await deletePhotoFromDb(id);
   showToast('Foto verwijderd');
-  renderProgress();
+  await renderProgress();
 }
 
 function drawWeightChart(wh) {
@@ -1494,7 +1494,7 @@ async function renderProgress() {
   const progressPhotos = await getProgressPhotos();
   const totalSessions = sessions.length;
   const totalSets = sessions.flatMap(s => Object.values(s.data||{})).flat().filter(s=>s.done).length;
-  const streak = getStreak();
+  const streak = await getStreak();
 
   const exWithType = [];
   Object.entries(WORKOUTS).forEach(([type, w]) => {
@@ -1631,6 +1631,40 @@ function openExerciseInfo(exId, type) {
 
   const colors = {pull:'var(--pull)',push:'var(--push)',legs:'var(--legs)'};
   const color = colors[type] || 'var(--warm)';
+  // Specific YouTube video IDs per exercise
+  const YT_VIDEOS = {
+    dumbbell_row: 'roCP7FxgAEo',
+    renegade_row: 'LBCOBXFZJDM',
+    bicep_curl: 'ykJmrZ5v0Oo',
+    hammer_curl: 'zC3nLlEvin4',
+    rear_delt_fly: 'EA7u4Q_8HQ0',
+    incline_row: 'GZbfZ033f74',
+    wide_row: 'T3N-TO4reLQ',
+    concentration_curl: 'Jvj2wV0vOYU',
+    reverse_curl: 'nwIBqBDNGYg',
+    face_pull_alt: 'NU_yGQFvMSE',
+    chest_press: 'VmB1G1K7v94',
+    dumbbell_fly: 'eozdVDA78K0',
+    shoulder_press: 'qEwKCR5JCog',
+    lateral_raise: 'XPPfnSEATJA',
+    tricep_kickback: 'PYPMgfI4-Eo',
+    incline_press: 'DbFgADa2PL8',
+    chest_squeeze_press: 'jkNPMG9ACJA',
+    arnold_press: '6Z15_WdXmVw',
+    front_raise: 'sONMGEJPeGg',
+    overhead_tricep: 'nRiJVZDpdL0',
+    goblet_squat: 'MeIiIdhvXT4',
+    romanian_deadlift: 'hCDzSR6Yg2s',
+    reverse_lunge: 'xrjMOz7PNOA',
+    glute_bridge: 'OUgsJ8-Vi0E',
+    calf_raise: 'gwLzBJYoWlA',
+    sumo_squat: 'kkDDEN6KZOI',
+    single_leg_rdl: 'UN3-BNUDWMA',
+    walking_lunge: 'L8fvypPrzzs',
+    hip_thrust: 'SEdqd1n0cvg',
+    single_calf_raise: 'JbyjNymZOt0'
+  };
+  const ytId = YT_VIDEOS[exId];
   const ytQuery = encodeURIComponent(ex.name + ' dumbbell exercise tutorial');
 
   const html = `

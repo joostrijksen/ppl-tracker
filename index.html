@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PPL Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080808;
+  --surface: #111;
+  --card: #161616;
+  --card2: #1c1c1c;
+  --border: #252525;
+  --pull: #3b9ede;
+  --push: #e05c4b;
+  --legs: #3dbd6e;
+  --warm: #f5a623;
+  --text: #f0f0f0;
+  --muted: #555;
+  --muted2: #888;
+  --success: #3dbd6e;
+  --radius: 14px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 90px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* HEADER */
+.app-header {
+  padding: 20px 20px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 100;
+}
+
+.app-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 3px;
+}
+
+.app-date {
+  font-size: 11px;
+  color: var(--muted2);
+  font-weight: 300;
+}
+
+.streak-badge {
+  background: rgba(245,166,35,0.12);
+  border: 1px solid rgba(245,166,35,0.3);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warm);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* NAV */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 200;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 12px 4px 14px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+
+.nav-btn .nav-icon { font-size: 18px; }
+.nav-btn.active { color: var(--warm); }
+
+/* PAGES */
+.page { display: none; padding: 0 16px; }
+.page.active { display: block; }
+
+/* TODAY PAGE */
+.today-header {
+  padding: 20px 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.today-day-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.day-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+
+.today-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 2px;
+}
+
+.today-sub {
+  font-size: 12px;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
+.rest-day-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.rest-day-card .rest-emoji { font-size: 40px; margin-bottom: 12px; }
+.rest-day-card h3 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--muted2); }
+.rest-day-card p { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* EXERCISE CARDS */
+.exercise-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.exercise-card.completed { border-color: rgba(61,189,110,0.3); }
+
+.ex-card-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.ex-card-header .ex-num {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.pull-day .ex-num { background: rgba(59,158,222,0.15); color: var(--pull); }
+.push-day .ex-num { background: rgba(224,92,75,0.15); color: var(--push); }
+.legs-day .ex-num { background: rgba(61,189,110,0.15); color: var(--legs); }
+
+.ex-card-info { flex: 1; }
+.ex-card-name { font-size: 14px; font-weight: 600; }
+.ex-card-sub { font-size: 11px; color: var(--muted2); margin-top: 2px; }
+
+.ex-card-status {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.ex-card-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border);
+  display: none;
+}
+
+.ex-card-body.open { display: block; }
+
+.sets-grid {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr 40px;
+  gap: 6px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.sets-grid-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr 40px;
+  gap: 6px;
+  margin-top: 10px;
+  padding-bottom: 4px;
+}
+
+.sets-grid-header span {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.set-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  color: var(--muted2);
+  text-align: center;
+}
+
+.set-input {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+  -webkit-appearance: none;
+}
+
+.set-input:focus {
+  outline: none;
+  border-color: var(--warm);
+}
+
+.set-check {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  margin: 0 auto;
+  transition: all 0.2s;
+}
+
+.set-check.done {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.pr-badge {
+  background: rgba(245,166,35,0.15);
+  border: 1px solid rgba(245,166,35,0.3);
+  color: var(--warm);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 6px;
+  letter-spacing: 0.5px;
+}
+
+.last-session {
+  background: var(--card2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.last-session strong { color: var(--text); font-weight: 500; }
+
+.finish-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: none;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: opacity 0.2s;
+}
+
+.pull-day .finish-btn { background: var(--pull); color: #fff; }
+.push-day .finish-btn { background: var(--push); color: #fff; }
+.legs-day .finish-btn { background: var(--legs); color: #fff; }
+
+/* HISTORY PAGE */
+.history-filter {
+  display: flex;
+  gap: 8px;
+  padding: 16px 0 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filter-btn {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn.active { background: var(--warm); border-color: var(--warm); color: #000; font-weight: 600; }
+
+.history-session {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.history-session-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.history-day-tag {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.tag-pull { background: rgba(59,158,222,0.15); color: var(--pull); }
+.tag-push { background: rgba(224,92,75,0.15); color: var(--push); }
+.tag-legs { background: rgba(61,189,110,0.15); color: var(--legs); }
+
+.history-session-info { flex: 1; }
+.history-session-date { font-size: 13px; font-weight: 500; }
+.history-session-sub { font-size: 11px; color: var(--muted2); margin-top: 2px; }
+
+.history-session-body {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: none;
+}
+
+.history-session-body.open { display: block; }
+
+.history-ex-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.history-ex-row:last-child { border-bottom: none; }
+.history-ex-sets { color: var(--muted2); font-size: 12px; }
+
+/* PROGRESS PAGE */
+.progress-header {
+  padding: 20px 0 4px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+}
+
+.progress-sub {
+  font-size: 12px;
+  color: var(--muted2);
+  margin-bottom: 16px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.stat-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 1px;
+  color: var(--warm);
+}
+
+.stat-label {
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.pr-section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  margin: 16px 0 8px;
+}
+
+.pr-list-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.pr-ex-name { font-size: 13px; font-weight: 500; }
+.pr-ex-day { font-size: 10px; color: var(--muted2); margin-top: 2px; }
+
+.pr-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.pr-value.pull { color: var(--pull); }
+.pr-value.push { color: var(--push); }
+.pr-value.legs { color: var(--legs); }
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--success);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 12px 20px;
+  border-radius: 20px;
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 999;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 500;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px 40px;
+  width: 100%;
+  max-width: 480px;
+  border-top: 1px solid var(--border);
+}
+
+.modal h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+
+.modal-close {
+  width: 100%;
+  padding: 14px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 13px; }
+
+/* Animations */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page.active > * {
+  animation: slideUp 0.3s ease both;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+.sync-indicator {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  font-size: 10px;
+  color: var(--muted);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sync-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.sync-dot.syncing { background: var(--warm); animation: pulse 1s infinite; }
+.sync-dot.synced { background: var(--success); }
+.sync-dot.error { background: var(--push); }
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+</style>
+</head>
+<body>
+
+<div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">laden...</span></div>
+<div class="app-header">
+  <div>
+    <div class="app-title">PPL TRACKER</div>
+    <div class="app-date" id="headerDate"></div>
+  </div>
+  <div class="streak-badge" id="streakBadge">🔥 <span id="streakCount">0</span> streak</div>
+</div>
+
+<!-- PAGES -->
+<div id="pageTrain" class="page active"></div>
+<div id="pageHistory" class="page"></div>
+<div id="pageProgress" class="page"></div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('train', this)">
+    <span class="nav-icon">💪</span>Vandaag
+  </button>
+  <button class="nav-btn" onclick="showPage('history', this)">
+    <span class="nav-icon">📋</span>Historie
+  </button>
+  <button class="nav-btn" onclick="showPage('progress', this)">
+    <span class="nav-icon">📈</span>Progressie
+  </button>
+</nav>
+
+
+
+<!-- EXERCISE INFO MODAL -->
+<div class="modal-overlay" id="exInfoOverlay" onclick="closeExInfo(event)">
+  <div class="modal" id="exInfoModal" style="max-height:85vh;overflow-y:auto;">
+    <div id="exInfoContent"></div>
+    <button class="modal-close" onclick="document.getElementById('exInfoOverlay').classList.remove('open')">Sluiten</button>
+  </div>
+</div>
+
+<!-- DAY MODAL -->
+<div class="modal-overlay" id="dayModalOverlay" onclick="closeDayModal(event)">
+  <div class="modal" id="dayModal">
+    <div id="dayModalContent"></div>
+    <button class="modal-close" onclick="document.getElementById('dayModalOverlay').classList.remove('open')">Sluiten</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+<script>
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://hrxtbbcjfzorbdlyxtut.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhyeHRiYmNqZnpvcmJkbHl4dHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDc0ODYsImV4cCI6MjA5MzgyMzQ4Nn0.cRJGJbcfC9UzWC84TWogvgFtsaQIrvy4CbeapjyDlIc';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Simple user ID based on browser fingerprint (no auth needed)
+function getUserId() {
+  let uid = localStorage.getItem('ppl_uid');
+  if (!uid) {
+    uid = 'user_' + Math.random().toString(36).substr(2, 12);
+    localStorage.setItem('ppl_uid', uid);
+  }
+  return uid;
+}
+
+const USER_ID = getUserId();
+
+function setSyncStatus(status) {
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + status;
+  label.textContent = status === 'syncing' ? 'syncing...' : status === 'synced' ? 'opgeslagen' : status === 'error' ? 'offline' : '';
+}
+
+// ─── STORAGE (Supabase + localStorage fallback) ───────────────────────────────
+async function getSessions() {
+  try {
+    const { data, error } = await sb.from('ppl_sessions').select('*').eq('user_id', USER_ID).order('date', { ascending: true });
+    if (error) throw error;
+    // Convert to local format
+    return data.map(s => ({ date: s.date, type: s.type, variant: s.variant, data: s.data, _id: s.id }));
+  } catch(e) {
+    // Fallback to localStorage
+    return JSON.parse(localStorage.getItem('ppl_sessions') || '[]');
+  }
+}
+
+async function saveSession(sessionObj) {
+  setSyncStatus('syncing');
+  try {
+    const existing = await sb.from('ppl_sessions').select('id').eq('user_id', USER_ID).eq('date', sessionObj.date).single();
+    if (existing.data) {
+      await sb.from('ppl_sessions').update({ type: sessionObj.type, variant: sessionObj.variant, data: sessionObj.data }).eq('id', existing.data.id);
+    } else {
+      await sb.from('ppl_sessions').insert({ user_id: USER_ID, date: sessionObj.date, type: sessionObj.type, variant: sessionObj.variant, data: sessionObj.data });
+    }
+    setSyncStatus('synced');
+  } catch(e) {
+    setSyncStatus('error');
+    // Fallback localStorage
+    const sessions = JSON.parse(localStorage.getItem('ppl_sessions') || '[]');
+    const idx = sessions.findIndex(s => s.date === sessionObj.date);
+    if (idx >= 0) sessions[idx] = sessionObj; else sessions.push(sessionObj);
+    localStorage.setItem('ppl_sessions', JSON.stringify(sessions));
+  }
+}
+
+async function getTodaySession() {
+  const today = new Date().toISOString().split('T')[0];
+  const sessions = await getSessions();
+  return sessions.find(s => s.date === today) || null;
+}
+
+async function getLastSession(type) {
+  const sessions = (await getSessions()).filter(s => s.type === type);
+  return sessions.length > 1 ? sessions[sessions.length - 2] : null;
+}
+
+async function getPRs() {
+  try {
+    const { data, error } = await sb.from('ppl_prs').select('*').eq('user_id', USER_ID);
+    if (error) throw error;
+    const prs = {};
+    data.forEach(p => { prs[p.exercise_id] = { weight: p.weight, date: p.date }; });
+    return prs;
+  } catch(e) {
+    return JSON.parse(localStorage.getItem('ppl_prs') || '{}');
+  }
+}
+
+async function savePR(exId, weight, date) {
+  try {
+    const existing = await sb.from('ppl_prs').select('id,weight').eq('user_id', USER_ID).eq('exercise_id', exId).single();
+    if (existing.data) {
+      if (weight > existing.data.weight) {
+        await sb.from('ppl_prs').update({ weight, date }).eq('id', existing.data.id);
+      }
+    } else {
+      await sb.from('ppl_prs').insert({ user_id: USER_ID, exercise_id: exId, weight, date });
+    }
+  } catch(e) {
+    const prs = JSON.parse(localStorage.getItem('ppl_prs') || '{}');
+    if (!prs[exId] || weight > prs[exId].weight) {
+      prs[exId] = { weight, date };
+      localStorage.setItem('ppl_prs', JSON.stringify(prs));
+    }
+  }
+}
+
+async function getWeightHistory() {
+  try {
+    const { data, error } = await sb.from('ppl_weights').select('*').eq('user_id', USER_ID).order('date', { ascending: true });
+    if (error) throw error;
+    return data.map(w => ({ date: w.date, weight: parseFloat(w.weight) }));
+  } catch(e) {
+    return JSON.parse(localStorage.getItem('ppl_weights') || '[]');
+  }
+}
+
+async function saveWeightToDb(date, weight) {
+  setSyncStatus('syncing');
+  try {
+    const existing = await sb.from('ppl_weights').select('id').eq('user_id', USER_ID).eq('date', date).single();
+    if (existing.data) {
+      await sb.from('ppl_weights').update({ weight }).eq('id', existing.data.id);
+    } else {
+      await sb.from('ppl_weights').insert({ user_id: USER_ID, date, weight });
+    }
+    setSyncStatus('synced');
+  } catch(e) {
+    setSyncStatus('error');
+    const wh = JSON.parse(localStorage.getItem('ppl_weights') || '[]');
+    const idx = wh.findIndex(w => w.date === date);
+    if (idx >= 0) wh[idx].weight = weight; else wh.push({ date, weight });
+    localStorage.setItem('ppl_weights', JSON.stringify(wh));
+  }
+}
+
+async function getProgressPhotos() {
+  try {
+    const { data, error } = await sb.from('ppl_photos').select('*').eq('user_id', USER_ID).order('date', { ascending: true });
+    if (error) throw error;
+    return data.map(p => ({ date: p.date, weight: p.weight, data: p.data, _id: p.id }));
+  } catch(e) {
+    return JSON.parse(localStorage.getItem('ppl_photos') || '[]');
+  }
+}
+
+async function savePhotoToDb(date, weight, photoData) {
+  setSyncStatus('syncing');
+  try {
+    await sb.from('ppl_photos').insert({ user_id: USER_ID, date, weight, data: photoData });
+    setSyncStatus('synced');
+  } catch(e) {
+    setSyncStatus('error');
+    const photos = JSON.parse(localStorage.getItem('ppl_photos') || '[]');
+    photos.push({ date, weight, data: photoData });
+    localStorage.setItem('ppl_photos', JSON.stringify(photos));
+  }
+}
+
+async function deletePhotoFromDb(id) {
+  try {
+    await sb.from('ppl_photos').delete().eq('id', id);
+  } catch(e) {
+    console.error('Delete photo failed', e);
+  }
+}
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const SCHEDULE = {
+  2: 'pull',  // dinsdag
+  5: 'push',  // vrijdag
+  0: 'legs'   // zondag
+};
+
+const WORKOUTS = {
+  pull: {
+    label: 'PULL DAY',
+    color: '#3b9ede',
+    muscles: 'Rug · Biceps · Rear Delts',
+    a: [
+      { id: 'dumbbell_row', name: 'Dumbbell Row', tip: '1 arm op bank — elleboog langs lichaam', target: '3 × 8–12' },
+      { id: 'renegade_row', name: 'Renegade Row', tip: 'Plankpositie — core strak', target: '3 × 8–10' },
+      { id: 'bicep_curl', name: 'Bicep Curl', tip: 'Langzaam omlaag — 3 tellen', target: '3 × 10–12' },
+      { id: 'hammer_curl', name: 'Hammer Curl', tip: 'Neutrale grip', target: '3 × 10–12' },
+      { id: 'rear_delt_fly', name: 'Rear Delt Fly', tip: 'Licht gewicht — focus squeeze', target: '3 × 12–15' }
+    ],
+    b: [
+      { id: 'incline_row', name: 'Incline Dumbbell Row', tip: 'Voorover op stoel of kussen — beide armen', target: '3 × 10–12' },
+      { id: 'wide_row', name: 'Wide Grip Row', tip: 'Ellebogen wijd uit — treft bovenste rug', target: '3 × 10–12' },
+      { id: 'concentration_curl', name: 'Concentration Curl', tip: 'Elleboog op knie — maximale focus bicep', target: '3 × 10–12' },
+      { id: 'reverse_curl', name: 'Reverse Curl', tip: 'Handpalmen naar beneden — onderarm en bicep', target: '3 × 10–12' },
+      { id: 'face_pull_alt', name: 'Upright Row', tip: 'Dumbbells langs lichaam omhoog tot kin', target: '3 × 12–15' }
+    ]
+  },
+  push: {
+    label: 'PUSH DAY',
+    color: '#e05c4b',
+    muscles: 'Borst · Schouders · Triceps',
+    a: [
+      { id: 'chest_press', name: 'Dumbbell Chest Press', tip: 'Op vloer of bank — ellebogen 45°', target: '4 × 8–12' },
+      { id: 'dumbbell_fly', name: 'Dumbbell Fly', tip: 'Lichte boog — voel rek in borst', target: '3 × 10–12' },
+      { id: 'shoulder_press', name: 'Shoulder Press', tip: 'Dumbbells op schouderhoogte', target: '3 × 8–12' },
+      { id: 'lateral_raise', name: 'Lateral Raise', tip: 'Licht gewicht — ellebogen licht gebogen', target: '3 × 12–15' },
+      { id: 'tricep_kickback', name: 'Tricep Kickback', tip: 'Bovenarm stil — alleen onderarm', target: '3 × 10–12' }
+    ],
+    b: [
+      { id: 'incline_press', name: 'Incline Chest Press', tip: 'Rug schuin omhoog — treft bovenste borst', target: '4 × 8–12' },
+      { id: 'chest_squeeze_press', name: 'Chest Squeeze Press', tip: 'Dumbbells tegen elkaar drukken — borst aangespannen', target: '3 × 10–12' },
+      { id: 'arnold_press', name: 'Arnold Press', tip: 'Draai je polsen tijdens het omhoogdrukken', target: '3 × 8–12' },
+      { id: 'front_raise', name: 'Front Raise', tip: 'Armen recht naar voren tot schouderhoogte', target: '3 × 12–15' },
+      { id: 'overhead_tricep', name: 'Overhead Tricep Extension', tip: 'Beide handen om 1 dumbbell boven het hoofd', target: '3 × 10–12' }
+    ]
+  },
+  legs: {
+    label: 'LEGS DAY',
+    color: '#3dbd6e',
+    muscles: 'Quads · Hamstrings · Glutes · Calves',
+    a: [
+      { id: 'goblet_squat', name: 'Goblet Squat', tip: '1 dumbbell voor borst — diep zakken', target: '4 × 10–12' },
+      { id: 'romanian_deadlift', name: 'Romanian Deadlift', tip: 'Rug recht — voel rek hamstrings', target: '3 × 10–12' },
+      { id: 'reverse_lunge', name: 'Reverse Lunge', tip: 'Stap achteruit — knie boven enkel', target: '3 × 10 p/been' },
+      { id: 'glute_bridge', name: 'Glute Bridge', tip: 'Dumbbell op heupen — vasthouden', target: '3 × 12–15' },
+      { id: 'calf_raise', name: 'Calf Raise', tip: 'Op een trede voor extra range', target: '3 × 15–20' }
+    ],
+    b: [
+      { id: 'sumo_squat', name: 'Sumo Squat', tip: 'Brede stand, tenen wijd — treft inner quad en glute', target: '4 × 10–12' },
+      { id: 'single_leg_rdl', name: 'Single Leg RDL', tip: 'Op 1 been — dumbbell in tegenovergestelde hand', target: '3 × 8–10 p/been' },
+      { id: 'walking_lunge', name: 'Walking Lunge', tip: 'Stap vooruit in lunge — afwisselend per been', target: '3 × 10 p/been' },
+      { id: 'hip_thrust', name: 'Hip Thrust', tip: 'Schouders op bank — zware dumbbell op heupen', target: '3 × 12–15' },
+      { id: 'single_calf_raise', name: 'Single Leg Calf Raise', tip: 'Op 1 been voor extra belasting', target: '3 × 15 p/been' }
+    ]
+  }
+};
+
+// Get exercises for a session (A or B based on session count)
+function getExercises(type, variant) {
+  return WORKOUTS[type][variant || 'a'];
+}
+
+// Determine A or B for today
+function getVariantForToday(type) {
+  const sessions = await getSessions().filter(s => s.type === type);
+  return sessions.length % 2 === 0 ? 'a' : 'b';
+}
+
+function getVariantForSession(session) {
+  // stored in session, or derive from index
+  if (session.variant) return session.variant;
+  const allOfType = getSessions().filter(s => s.type === session.type);
+  const idx = allOfType.findIndex(s => s.date === session.date);
+  return idx % 2 === 0 ? 'a' : 'b';
+}
+
+
+
+// ─── EXERCISE INFO ────────────────────────────────────────────────────────────
+const EXERCISE_INFO = {
+  dumbbell_row: {
+    steps: ['Zet je linkerhand en -knie op een bank', 'Rug horizontaal, recht houden', 'Trek de dumbbell langs je lichaam omhoog naar je heup', 'Elleboog wijst naar het plafond op het hoogste punt', 'Langzaam terug — voel de rek in je rug'],
+    focus: 'Latissimus dorsi (brede rugspier)',
+    mistake: 'Niet met je schouder trekken — de beweging komt uit je rug'
+  },
+  renegade_row: {
+    steps: ['Begin in plankpositie met een dumbbell in elke hand', 'Voeten iets wijder dan schouderbreedte', 'Trek één dumbbell omhoog terwijl je core strak staat', 'Heupen blijven horizontaal — niet roteren', 'Wissel per rep'],
+    focus: 'Rug + core stabiliteit',
+    mistake: 'Heupen omhoog draaien — dit haalt de spanning van je rug'
+  },
+  bicep_curl: {
+    steps: ['Sta rechtop, dumbbells langs je lichaam', 'Draai je polsen zodat handpalmen naar voren wijzen', 'Curl omhoog tot de dumbbell je schouder bijna raakt', 'Tel 3 seconden terug naar beneden', 'Ellebogen blijven op dezelfde plek'],
+    focus: 'Biceps brachii',
+    mistake: 'Niet schommelen met je lichaam — alleen de onderarm beweegt'
+  },
+  hammer_curl: {
+    steps: ['Neutrale grip: duim naar boven, handpalm naar binnen', 'Curl omhoog zoals een hamer', 'Tel 3 seconden terug', 'Kan ook afwisselend per arm'],
+    focus: 'Biceps + brachialis + onderarm',
+    mistake: 'Polsen buigen tijdens de beweging — houd ze recht'
+  },
+  rear_delt_fly: {
+    steps: ['Voorover gebogen, rug recht, knieën licht gebogen', 'Armen licht gebogen, dumbbells hangen naar beneden', 'Spreid je armen zijwaarts tot schouderhoogte', 'Knijp je schouderbladen samen bovenaan', 'Langzaam terug'],
+    focus: 'Achterste deltaspier (rear delt)',
+    mistake: 'Te zwaar gewicht — dit wordt dan een rugspier oefening'
+  },
+  chest_press: {
+    steps: ['Lig op je rug, dumbbells op borsthoogte', 'Ellebogen op 45° van je lichaam (niet 90°)', 'Druk recht omhoog — dumbbells komen bijna samen boven', 'Langzaam terug tot je borst een lichte rek voelt', 'Op de vloer werkt prima als je geen bank hebt'],
+    focus: 'Pectoralis major (borst)',
+    mistake: 'Ellebogen te ver naar buiten — dit belast je schouders te veel'
+  },
+  dumbbell_fly: {
+    steps: ['Lig op rug, dumbbells boven je borst, lichte boog in de armen', 'Spreid je armen zijwaarts in een boog naar beneden', 'Voel de rek in je borst', 'Breng terug in dezelfde boog — alsof je een boom omhelst', 'Houd de ellebogen licht gebogen gedurende de hele beweging'],
+    focus: 'Borst (buitenkant)',
+    mistake: 'Ellebogen te ver strekken — dan wordt het een press'
+  },
+  shoulder_press: {
+    steps: ['Zittend of staand, dumbbells op schouderhoogte', 'Handpalmen naar voren', 'Druk recht omhoog tot je armen bijna gestrekt zijn', 'Langzaam terug naar schouderhoogte', 'Onderrug niet hol trekken'],
+    focus: 'Deltaspier (voor en zij)',
+    mistake: 'Niet helemaal naar beneden gaan — je verliest dan het volledige bewegingsbereik'
+  },
+  lateral_raise: {
+    steps: ['Sta rechtop, dumbbells langs je lichaam', 'Hef armen zijwaarts op tot schouderhoogte', 'Ellebogen licht gebogen gedurende de beweging', 'Handpalmen wijzen naar beneden bovenaan', 'Langzaam terug — dit is waar de spier werkt'],
+    focus: 'Zijkant schouder (mediale delt)',
+    mistake: 'Te zwaar gewicht — dan compenseer je met je rug en nek'
+  },
+  tricep_kickback: {
+    steps: ['Voorover gebogen, bovenarm parallel aan de grond', 'Elleboog op 90° als startpositie', 'Strek je arm recht naar achteren', 'Bovenarm beweegt niet — alleen de onderarm', 'Knijp de tricep samen aan het einde'],
+    focus: 'Triceps brachii',
+    mistake: 'Bovenarm laat zakken tijdens de beweging'
+  },
+  goblet_squat: {
+    steps: ['Houd één dumbbell verticaal voor je borst', 'Voeten iets wijder dan schouderbreedte, tenen licht naar buiten', 'Zak diep naar beneden — borst omhoog houden', 'Knieën volgen de richting van je tenen', 'Druk door je hielen omhoog'],
+    focus: 'Quadriceps + glutes',
+    mistake: 'Borst naar voren zakken — de dumbbell helpt je dit te voorkomen'
+  },
+  romanian_deadlift: {
+    steps: ['Sta rechtop, dumbbells voor je dijen', 'Duw je heupen naar achteren terwijl je voorover buigt', 'Rug blijft recht — niet naar beneden ronden', 'Dumbbells blijven dicht bij je benen', 'Voel de rek in je hamstrings, dan heupen terugduwen omhoog'],
+    focus: 'Hamstrings + glutes',
+    mistake: 'Knieën buigen als een squat — dit is een heup-scharnier beweging'
+  },
+  reverse_lunge: {
+    steps: ['Sta rechtop, dumbbells in elke hand', 'Stap één been naar achteren', 'Zak neer tot je achterste knie bijna de grond raakt', 'Voorste knie blijft boven je enkel — niet erover heen', 'Druk terug omhoog via je voorste hiel'],
+    focus: 'Quadriceps + glutes + balans',
+    mistake: 'Voorste knie over je teen laten komen'
+  },
+  glute_bridge: {
+    steps: ['Lig op je rug, knieën gebogen, voeten plat op de grond', 'Leg een dumbbell op je heupen en houd hem vast', 'Druk je heupen omhoog tot je lichaam een rechte lijn vormt', 'Knijp je billen samen bovenaan — 1 seconde vasthouden', 'Langzaam terug'],
+    focus: 'Glutes + hamstrings',
+    mistake: 'Je onderrug te ver doortrekken — stop als je heupen gelijk zijn met je schouders'
+  },
+  calf_raise: {
+    steps: ['Sta op de rand van een trede of op de grond', 'Dumbbells in je handen of gewicht op één been voor meer uitdaging', 'Hef op je tenen zo hoog mogelijk', 'Houd 1 seconde vast bovenaan', 'Zak langzaam terug — laat je hiel zakken voor extra rek'],
+    focus: 'Gastrocnemius + soleus (kuit)',
+    mistake: 'Te snel — de kuitspier reageert goed op langzame reps met pauze bovenaan'
+  },
+  // PULL B
+  incline_row: {
+    steps: ['Leg een kussen of stoel schuin, ga voorover liggen met borst erop', 'Laat dumbbells hangen, handpalmen naar binnen', 'Trek beide armen omhoog langs je lichaam', 'Schouderbladen samenknijpen bovenaan', 'Langzaam terug'],
+    focus: 'Midden rug + rhomboids',
+    mistake: 'Schouders optrekken tijdens de beweging — houd ze naar beneden'
+  },
+  wide_row: {
+    steps: ['Voorover gebogen, knieën licht gebogen, rug recht', 'Ellebogen wijd naar buiten — niet langs je lichaam', 'Trek omhoog tot dumbbells schouderhoogte bereiken', 'Knijp schouderbladen samen', 'Langzaam terug'],
+    focus: 'Bovenste rug + achterste schouder',
+    mistake: 'Rug laten ronden — altijd een rechte rug houden'
+  },
+  concentration_curl: {
+    steps: ['Zit op een stoel, voorover gebogen', 'Elleboog van je rechterarm rust op de binnenkant van je rechterknie', 'Curl omhoog — maximale concentratie op de bicep', 'Langzaam terug — volledig strekken', 'Wissel van arm'],
+    focus: 'Biceps — piek isolatie',
+    mistake: 'Elleboog los laten van je knie — dan verlies je de isolatie'
+  },
+  reverse_curl: {
+    steps: ['Sta rechtop, dumbbells in overhand grip (handpalmen naar beneden)', 'Curl omhoog zoals een normale curl', 'Polsen recht houden gedurende de beweging', 'Langzaam terug', 'Lichter gewicht dan normale curl'],
+    focus: 'Brachialis + onderarm extensoren',
+    mistake: 'Polsen buigen — houd ze neutraal'
+  },
+  face_pull_alt: {
+    steps: ['Sta rechtop, dumbbells langs je lichaam', 'Trek dumbbells recht omhoog langs je torso richting je kin', 'Ellebogen wijzen naar buiten en omhoog', 'Stop bij kin hoogte', 'Langzaam terug'],
+    focus: 'Schouders + bovenste rug',
+    mistake: 'Te zwaar gewicht — dan ga je schommelen met je lichaam'
+  },
+  // PUSH B
+  incline_press: {
+    steps: ['Rug iets schuin omhoog (kussens onder je rug)', 'Dumbbells op borsthoogte, ellebogen 45°', 'Druk omhoog naar elkaar toe', 'Langzaam terug tot je bovenste borst een rek voelt', 'Focus op de bovenkant van je borst'],
+    focus: 'Bovenste borst (claviculair deel)',
+    mistake: 'Te plat liggen — dan wordt het een normale chest press'
+  },
+  chest_squeeze_press: {
+    steps: ['Lig op rug, dumbbells tegen elkaar gedrukt voor je borst', 'Houd de dumbbells constant tegen elkaar — dit activeert de borst maximaal', 'Druk omhoog terwijl je ze tegen elkaar duwt', 'Langzaam terug', 'Voel de borst de hele tijd werken'],
+    focus: 'Borst — maximale contractie',
+    mistake: 'Dumbbells laten scheiden — dan verlies je de spanning'
+  },
+  arnold_press: {
+    steps: ['Zittend, dumbbells voor je borst, handpalmen naar je toe', 'Druk omhoog en roteer je polsen zodat handpalmen aan het einde naar voren wijzen', 'Volledig strekken bovenaan', 'Omgekeerde beweging terug naar beneden', 'Langzamere beweging dan normale shoulder press'],
+    focus: 'Alle drie de koppen van de deltaspier',
+    mistake: 'Te snel roteren — doe de beweging bewust en gecontroleerd'
+  },
+  front_raise: {
+    steps: ['Sta rechtop, dumbbells voor je dijen', 'Hef beide armen recht naar voren tot schouderhoogte', 'Armen gestrekt of licht gebogen', 'Langzaam terug', 'Kan ook afwisselend per arm'],
+    focus: 'Voorste deltaspier',
+    mistake: 'Zwaaien met je lichaam — beweging komt alleen van de schouder'
+  },
+  overhead_tricep: {
+    steps: ['Sta of zit rechtop', 'Houd één dumbbell met beide handen boven je hoofd', 'Laat de dumbbell naar beneden zakken achter je hoofd — ellebogen omhoog', 'Strek je armen terug omhoog', 'Ellebogen wijzen omhoog gedurende de hele beweging'],
+    focus: 'Lange kop van de triceps',
+    mistake: 'Ellebogen naar buiten laten zakken — ze moeten omhoog blijven'
+  },
+  // LEGS B
+  sumo_squat: {
+    steps: ['Brede voetstand, tenen 45° naar buiten', 'Houd één dumbbell verticaal tussen je benen', 'Zak recht naar beneden — knieën volgen je tenen', 'Borst omhoog, rug recht', 'Druk door je hielen omhoog'],
+    focus: 'Inner quad + glutes + adductors',
+    mistake: 'Knieën naar binnen zakken — actief naar buiten duwen'
+  },
+  single_leg_rdl: {
+    steps: ['Sta op één been, lichte knie buiging', 'Houd dumbbell in de tegenovergestelde hand', 'Kantel voorover — vrij been gaat recht naar achteren', 'Rug blijft recht, heupen horizontaal', 'Kom terug omhoog via je staande been'],
+    focus: 'Hamstrings + glutes + balans',
+    mistake: 'Heupen roteren — houd ze parallel aan de grond'
+  },
+  walking_lunge: {
+    steps: ['Sta rechtop, dumbbells in beide handen', 'Stap groot naar voren', 'Zak neer tot achterste knie bijna de grond raakt', 'Stap door met je achterste been naar voren', 'Afwisselen per stap — loop door de ruimte'],
+    focus: 'Quadriceps + glutes + coördinatie',
+    mistake: 'Kleine stappen nemen — maak grote passen voor maximale spieractivatie'
+  },
+  hip_thrust: {
+    steps: ['Schouders rusten op een bank of stoel', 'Voeten plat op de grond, knieën 90°', 'Zware dumbbell op heupen vasthouden', 'Druk heupen recht omhoog — lichaam vormt een rechte lijn', 'Knijp billen samen bovenaan — 2 seconden vasthouden'],
+    focus: 'Glutes — beste oefening voor bilontwikkeling',
+    mistake: 'Heupen te hoog drukken — stop als je lichaam horizontaal is'
+  },
+  single_calf_raise: {
+    steps: ['Sta op één been op een trede', 'Houd één dumbbell vast aan dezelfde kant', 'Hef je hiel zo hoog mogelijk', 'Houd 1-2 seconden vast bovenaan', 'Zak langzaam terug tot je hiel onder de trede hangt'],
+    focus: 'Kuit — meer belasting dan twee-bens variant',
+    mistake: 'Te snel — de kuit heeft langzame gecontroleerde reps nodig'
+  }
+};
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+// Storage functions are now async via Supabase (defined above)
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function todayType() {
+  const dow = new Date().getDay();
+  return SCHEDULE[dow] || null;
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function getStreak() {
+  const sessions = await getSessions();
+  if (!sessions.length) return 0;
+  let streak = 0;
+  const dates = [...new Set(sessions.map(s => s.date))].sort().reverse();
+  for (let i = 0; i < dates.length; i++) {
+    const d = new Date(dates[i]);
+    const expected = new Date();
+    expected.setDate(expected.getDate() - i);
+    if (d.toISOString().split('T')[0] === expected.toISOString().split('T')[0]) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// ─── CURRENT SESSION STATE ────────────────────────────────────────────────────
+let currentSessionData = {};
+
+let currentVariant = 'a';
+
+async function initSession(type) {
+  const existing = await getTodaySession();
+  if (existing) {
+    currentSessionData = existing.data || {};
+    currentVariant = existing.variant || getVariantForToday(type);
+  } else {
+    currentVariant = getVariantForToday(type);
+    currentSessionData = {};
+    getExercises(type, currentVariant).forEach(ex => {
+      currentSessionData[ex.id] = [
+        { weight: '', reps: '', done: false },
+        { weight: '', reps: '', done: false },
+        { weight: '', reps: '', done: false }
+      ];
+    });
+  }
+}
+
+// ─── RENDER TODAY ─────────────────────────────────────────────────────────────
+async function renderToday() {
+  const page = document.getElementById('pageTrain');
+  const type = todayType();
+
+  // Header date
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('streakCount').textContent = await getStreak();
+
+  if (!type) {
+    page.innerHTML = `
+      <div style="padding:20px 0 12px;">
+        <div class="today-label" style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:var(--muted2)">RUSTDAG</div>
+      </div>
+      <div class="rest-day-card">
+        <div class="rest-emoji">😴</div>
+        <h3>Herstel dag</h3>
+        <p>Vandaag geen training. Je spieren groeien tijdens rust.<br>Morgen weer aan de slag.</p>
+      </div>
+      <div style="margin-top:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Week schema — tik op een dag</div>
+        ${['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'].map((dayName, i) => {
+          const dow = [1,2,3,4,5,6,0][i];
+          const isToday = new Date().getDay() === dow;
+          const dayType = SCHEDULE[dow];
+          const colors = {pull:'var(--pull)',push:'var(--push)',legs:'var(--legs)'};
+          const accentColor = dayType ? colors[dayType] : 'var(--muted)';
+          const allSessions = getSessions();
+          const daySession = allSessions.slice().reverse().find(s => new Date(s.date).getDay() === dow);
+          const hasDone = !!daySession;
+          return `<div onclick="openDayModal(${dow})" style="display:flex;align-items:center;justify-content:space-between;padding:10px 8px;border-radius:8px;margin-bottom:2px;cursor:pointer;background:${isToday?'rgba(245,166,35,0.06)':'transparent'};border:1px solid ${isToday?'rgba(245,166,35,0.2)':'transparent'};" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${isToday?'rgba(245,166,35,0.06)':'transparent'}'">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:${hasDone?'var(--success)':accentColor};opacity:${hasDone?1:0.35};flex-shrink:0"></div>
+              <span style="font-size:13px;font-weight:${isToday?'600':'400'};color:${isToday?'var(--warm)':'var(--text)'}">${dayName}${isToday?' ←':''}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${hasDone ? `<span style="font-size:10px;color:var(--success)">✓</span>` : ''}
+              <span style="font-size:11px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;color:${accentColor}">${dayType?dayType.toUpperCase():'RUST'}</span>
+              <span style="font-size:11px;color:var(--muted)">›</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  initSession(type);
+  const workout = WORKOUTS[type];
+  const prs = await getPRs();
+  const variant = currentVariant;
+  const exercises = getExercises(type, variant);
+
+  page.innerHTML = `
+    <div class="today-header">
+      <div class="today-day-badge">
+        <div class="day-dot" style="background:${workout.color}"></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="today-label" style="color:${workout.color}">${workout.label}</div>
+            <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:3px 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--warm);">WORKOUT ${variant.toUpperCase()}</div>
+          </div>
+          <div class="today-sub">${workout.muscles}</div>
+        </div>
+      </div>
+    </div>
+    <div id="exerciseList" class="${type}-day">
+      ${exercises.map((ex, idx) => renderExerciseCard(ex, idx, type, prs)).join('')}
+    </div>
+    <button class="finish-btn ${type}-day" onclick="finishWorkout('${type}')">TRAINING OPSLAAN ✓</button>
+    <div style="height:8px;"></div>
+  `;
+}
+
+function renderExerciseCard(ex, idx, type, prs) {
+  const sets = currentSessionData[ex.id] || [{weight:'',reps:'',done:false},{weight:'',reps:'',done:false},{weight:'',reps:'',done:false}];
+  const allDone = sets.every(s => s.done);
+  const pr = prs[ex.id];
+  const lastSession = getLastSession(type);
+  const lastData = lastSession?.data?.[ex.id];
+  const lastBest = lastData ? Math.max(...lastData.filter(s=>s.weight).map(s=>parseFloat(s.weight)||0)) : 0;
+
+  return `
+    <div class="exercise-card ${allDone ? 'completed' : ''}" id="card_${ex.id}">
+      <div class="ex-card-header" onclick="toggleCard('${ex.id}')">
+        <div class="ex-num">${idx + 1}</div>
+        <div class="ex-card-info">
+          <div class="ex-card-name">${ex.name}${pr ? `<span class="pr-badge">PR ${pr.weight}kg</span>` : ''}</div>
+          <div class="ex-card-sub">${ex.tip} · ${ex.target}</div>
+        </div>
+        <button onclick="event.stopPropagation();openExerciseInfo('${ex.id}','${type}')" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--muted2);font-size:12px;cursor:pointer;flex-shrink:0;">?</button>
+        <div class="ex-card-status">${allDone ? '✅' : '○'}</div>
+      </div>
+      <div class="ex-card-body" id="body_${ex.id}">
+        ${lastBest > 0 ? `<div class="last-session">Vorige keer: <strong>${lastBest}kg</strong></div>` : ''}
+        <div class="sets-grid-header">
+          <span>Set</span><span>Kg</span><span>Reps</span><span>✓</span>
+        </div>
+        ${sets.map((set, si) => `
+          <div class="sets-grid">
+            <div class="set-label">${si + 1}</div>
+            <input class="set-input" type="number" inputmode="decimal" placeholder="kg"
+              value="${set.weight}" onchange="updateSet('${ex.id}',${si},'weight',this.value,'${type}')">
+            <input class="set-input" type="number" inputmode="numeric" placeholder="reps"
+              value="${set.reps}" onchange="updateSet('${ex.id}',${si},'reps',this.value,'${type}')">
+            <button class="set-check ${set.done ? 'done' : ''}" id="check_${ex.id}_${si}"
+              onclick="toggleSetDone('${ex.id}',${si},'${type}')">
+              ${set.done ? '✓' : ''}
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function toggleCard(exId) {
+  const body = document.getElementById(`body_${exId}`);
+  body.classList.toggle('open');
+}
+
+async function updateSet(exId, setIdx, field, value, type) {
+  if (!currentSessionData[exId]) return;
+  currentSessionData[exId][setIdx][field] = value;
+  await checkPR(exId, type);
+  await autoSave(type);
+}
+
+async function toggleSetDone(exId, setIdx, type) {
+  if (!currentSessionData[exId]) return;
+  currentSessionData[exId][setIdx].done = !currentSessionData[exId][setIdx].done;
+  const btn = document.getElementById(`check_${exId}_${setIdx}`);
+  const isDone = currentSessionData[exId][setIdx].done;
+  btn.classList.toggle('done', isDone);
+  btn.textContent = isDone ? '✓' : '';
+
+  // Check if all sets done
+  const allDone = currentSessionData[exId].every(s => s.done);
+  const card = document.getElementById(`card_${exId}`);
+  card.classList.toggle('completed', allDone);
+  const status = card.querySelector('.ex-card-status');
+  status.textContent = allDone ? '✅' : '○';
+
+  await checkPR(exId, type);
+  await autoSave(type);
+}
+
+async function checkPR(exId, type) {
+  const sets = currentSessionData[exId];
+  const maxWeight = Math.max(...sets.filter(s => s.weight).map(s => parseFloat(s.weight) || 0));
+  if (maxWeight <= 0) return;
+  const prs = await getPRs();
+  const currentPR = prs[exId]?.weight || 0;
+  if (maxWeight > currentPR) {
+    const date = new Date().toISOString().split('T')[0];
+    await savePR(exId, maxWeight, date);
+    if (currentPR > 0) {
+      showToast(`🏆 PR! ${maxWeight}kg op ${[...getExercises(type,'a'),...getExercises(type,'b')].find(e=>e.id===exId)?.name}`);
+    }
+  }
+}
+
+async function autoSave(type) {
+  const today = new Date().toISOString().split('T')[0];
+  await saveSession({ date: today, type, variant: currentVariant, data: currentSessionData });
+}
+
+async function finishWorkout(type) {
+  await autoSave(type);
+  showToast('✅ Training opgeslagen!');
+  document.getElementById('streakCount').textContent = await getStreak();
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────────────────────
+let historyFilter = 'all';
+
+async function renderHistory() {
+  const page = document.getElementById('pageHistory');
+  const sessions = await getSessions().slice().reverse();
+
+  const filtered = historyFilter === 'all' ? sessions : sessions.filter(s => s.type === historyFilter);
+
+  page.innerHTML = `
+    <div class="history-filter">
+      ${['all','pull','push','legs'].map(f => `
+        <button class="filter-btn ${historyFilter===f?'active':''}" onclick="setHistoryFilter('${f}')">
+          ${f === 'all' ? 'Alles' : f.toUpperCase()}
+        </button>
+      `).join('')}
+    </div>
+    ${filtered.length === 0 ? `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p>Nog geen trainingen opgeslagen.<br>Sla je eerste sessie op!</p>
+      </div>
+    ` : filtered.map((session, idx) => `
+      <div class="history-session">
+        <div class="history-session-header" onclick="toggleHistory(${idx})">
+          <span class="history-day-tag tag-${session.type}">${session.type.toUpperCase()}</span>
+          <div class="history-session-info">
+            <div class="history-session-date">${formatDate(session.date)}</div>
+            <div class="history-session-sub">${Object.values(session.data||{}).flat().filter(s=>s.done).length} sets · Workout ${(session.variant||'a').toUpperCase()}</div>
+          </div>
+          <span style="color:var(--muted);font-size:12px">›</span>
+        </div>
+        <div class="history-session-body" id="hist_${idx}">
+          ${getExercises(session.type, getVariantForSession(session)).map(ex => {
+            const sets = session.data?.[ex.id] || [];
+            const doneSets = sets.filter(s => s.done && s.weight && s.reps);
+            if (!doneSets.length) return '';
+            return `<div class="history-ex-row">
+              <span>${ex.name}</span>
+              <span class="history-ex-sets">${doneSets.map(s=>`${s.weight}kg×${s.reps}`).join(' · ')}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function setHistoryFilter(f) {
+  historyFilter = f;
+  renderHistory();
+}
+
+function toggleHistory(idx) {
+  const body = document.getElementById(`hist_${idx}`);
+  body.classList.toggle('open');
+}
+
+
+// ─── WEIGHT & PHOTO STORAGE ───────────────────────────────────────────────────
+// Weight/photo storage now via Supabase (defined above)
+
+async function saveWeight() {
+  const input = document.getElementById('weightInput');
+  const val = parseFloat(input.value);
+  if (!val || val < 30 || val > 300) { showToast('Voer een geldig gewicht in'); return; }
+  const today = new Date().toISOString().split('T')[0];
+  await saveWeightToDb(today, val);
+  input.value = '';
+  showToast('✅ Gewicht opgeslagen!');
+  renderProgress();
+}
+
+function addProgressPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const wh = await getWeightHistory();
+    const today = new Date().toISOString().split('T')[0];
+    const todayWeight = wh.slice().reverse().find(w => w.date <= today)?.weight || null;
+    await savePhotoToDb(today, todayWeight, e.target.result);
+    showToast('📸 Foto opgeslagen!');
+    renderProgress();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function deletePhoto(id) {
+  await deletePhotoFromDb(id);
+  showToast('Foto verwijderd');
+  renderProgress();
+}
+
+function drawWeightChart(wh) {
+  if (wh.length < 2) return '';
+  const W = 300, H = 90, PAD = 30, RPAD = 8, TPAD = 8, BPAD = 20;
+  const plotW = W - PAD - RPAD;
+  const plotH = H - TPAD - BPAD;
+  const weights = wh.map(w => w.weight);
+  const minW = Math.min(...weights) * 0.97;
+  const maxW = Math.max(...weights) * 1.02;
+  const range = maxW - minW || 1;
+
+  const points = wh.map((w, i) => ({
+    x: PAD + (i / (wh.length - 1)) * plotW,
+    y: TPAD + plotH - ((w.weight - minW) / range) * plotH,
+    ...w
+  }));
+
+  const pathD = points.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaD = pathD + ` L${points[points.length-1].x.toFixed(1)},${TPAD+plotH} L${PAD},${TPAD+plotH} Z`;
+  const dots = points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#f5a623" stroke="#111" stroke-width="2"/>`).join('');
+
+  const labelIdxs = wh.length <= 4 ? wh.map((_,i)=>i) : [0, Math.floor((wh.length-1)/2), wh.length-1];
+  const xlabels = labelIdxs.map(i => {
+    const d = new Date(wh[i].date);
+    return `<text x="${points[i].x.toFixed(1)}" y="${H-3}" text-anchor="middle" font-size="8.5" fill="#555">${d.getDate()}/${d.getMonth()+1}</text>`;
+  }).join('');
+
+  const yvals = [minW, maxW];
+  const ylabels = yvals.map(v => {
+    const y = TPAD + plotH - ((v - minW) / range) * plotH;
+    return `<text x="${PAD-4}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="8.5" fill="#555">${v.toFixed(1)}</text>`;
+  }).join('');
+
+  return `<div style="margin-top:12px;">
+    <div style="font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Gewicht over tijd (kg)</div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;overflow:visible;">
+      <defs><linearGradient id="wgrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f5a623" stop-opacity="0.2"/>
+        <stop offset="100%" stop-color="#f5a623" stop-opacity="0"/>
+      </linearGradient></defs>
+      <line x1="${PAD}" y1="${TPAD}" x2="${PAD}" y2="${TPAD+plotH}" stroke="#252525" stroke-width="1"/>
+      <line x1="${PAD}" y1="${TPAD+plotH}" x2="${W-RPAD}" y2="${TPAD+plotH}" stroke="#252525" stroke-width="1"/>
+      <path d="${areaD}" fill="url(#wgrad)"/>
+      <path d="${pathD}" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${dots}${xlabels}${ylabels}
+    </svg>
+  </div>`;
+}
+
+// ─── PROGRESS ─────────────────────────────────────────────────────────────────
+let selectedExercise = null;
+
+function getExHistory(exId) {
+  return getSessions()
+    .filter(s => s.data?.[exId])
+    .map(s => {
+      const sets = (s.data[exId]||[]).filter(set => set.done && set.weight && set.reps);
+      if (!sets.length) return null;
+      const maxWeight = Math.max(...sets.map(s => parseFloat(s.weight)||0));
+      return { date: s.date, maxWeight };
+    })
+    .filter(Boolean);
+}
+
+function drawChart(exId, color) {
+  const history = getExHistory(exId);
+  if (history.length < 2) return `<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;">Minimaal 2 sessies nodig voor grafiek</div>`;
+
+  const W = 300, H = 110, PAD = 34, RPAD = 8, TPAD = 10, BPAD = 22;
+  const plotW = W - PAD - RPAD;
+  const plotH = H - TPAD - BPAD;
+  const weights = history.map(h => h.maxWeight);
+  const minW = Math.min(...weights) * 0.92;
+  const maxW = Math.max(...weights) * 1.06;
+  const range = maxW - minW || 1;
+
+  const points = history.map((h, i) => ({
+    x: PAD + (i / (history.length - 1)) * plotW,
+    y: TPAD + plotH - ((h.maxWeight - minW) / range) * plotH,
+    ...h
+  }));
+
+  const pathD = points.map((p,i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaD = pathD + ` L${points[points.length-1].x.toFixed(1)},${TPAD+plotH} L${PAD},${TPAD+plotH} Z`;
+  const dots = points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${color}" stroke="#111" stroke-width="2"/>`).join('');
+
+  const labelIdxs = history.length <= 3 ? history.map((_,i)=>i) : [0, Math.floor((history.length-1)/2), history.length-1];
+  const xlabels = labelIdxs.map(i => {
+    const d = new Date(history[i].date);
+    return `<text x="${points[i].x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8.5" fill="#555">${d.getDate()}/${d.getMonth()+1}</text>`;
+  }).join('');
+
+  const yvals = [minW, (minW+maxW)/2, maxW];
+  const ylabels = yvals.map(v => {
+    const y = TPAD + plotH - ((v - minW) / range) * plotH;
+    return `<text x="${PAD-4}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="8.5" fill="#555">${v.toFixed(0)}</text>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;overflow:visible;">
+    <defs><linearGradient id="g_${exId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <line x1="${PAD}" y1="${TPAD}" x2="${PAD}" y2="${TPAD+plotH}" stroke="#252525" stroke-width="1"/>
+    <line x1="${PAD}" y1="${TPAD+plotH}" x2="${W-RPAD}" y2="${TPAD+plotH}" stroke="#252525" stroke-width="1"/>
+    <path d="${areaD}" fill="url(#g_${exId})"/>
+    <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}${xlabels}${ylabels}
+  </svg>`;
+}
+
+async function toggleExerciseChart(exId) {
+  selectedExercise = selectedExercise === exId ? null : exId;
+  renderProgress();
+}
+
+async function renderProgress() {
+  const page = document.getElementById('pageProgress');
+  const sessions = await getSessions();
+  const prs = await getPRs();
+  const totalSessions = sessions.length;
+  const totalSets = sessions.flatMap(s => Object.values(s.data||{})).flat().filter(s=>s.done).length;
+  const streak = getStreak();
+
+  const exWithType = [];
+  Object.entries(WORKOUTS).forEach(([type, w]) => {
+    const seen = new Set();
+    [...w.a, ...w.b].forEach(ex => { if (!seen.has(ex.id)) { seen.add(ex.id); exWithType.push({ ...ex, type }); } });
+  });
+
+  const colorMap = {pull:'#3b9ede', push:'#e05c4b', legs:'#3dbd6e'};
+
+  page.innerHTML = `
+    <div class="progress-header">PROGRESSIE</div>
+    <div class="progress-sub">Tik op een oefening voor de grafiek</div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-value">${totalSessions}</div><div class="stat-label">Trainingen</div></div>
+      <div class="stat-card"><div class="stat-value">${totalSets}</div><div class="stat-label">Sets</div></div>
+      <div class="stat-card"><div class="stat-value">${streak}</div><div class="stat-label">Streak</div></div>
+    </div>
+
+    <div class="pr-section-title">Lichaamsgewicht</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px;">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
+        <input id="weightInput" type="number" inputmode="decimal" step="0.1" placeholder="kg bijv. 76.2"
+          style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;-webkit-appearance:none;">
+        <button onclick="saveWeight()" style="background:var(--warm);border:none;border-radius:8px;padding:10px 16px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer;white-space:nowrap;">OPSLAAN</button>
+      </div>
+      ${(()=>{
+        const wh = await getWeightHistory();
+        if (!wh.length) return `<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">Nog geen gewicht ingevoerd</div>`;
+        const latest = wh[wh.length-1];
+        const first = wh[0];
+        const diff = latest.weight - first.weight;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--warm);">${latest.weight} kg</div>
+            <div style="font-size:11px;color:var(--muted2);">Laatste meting · ${formatDate(latest.date)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:14px;font-weight:600;color:${diff<=0?'#3dbd6e':'#e05c4b'};">${diff>0?'+':''}${diff.toFixed(1)} kg</div>
+            <div style="font-size:11px;color:var(--muted2);">vs start (${first.weight}kg)</div>
+          </div>
+        </div>
+        ${wh.length >= 2 ? drawWeightChart(wh) : ''}`;
+      })()}
+    </div>
+
+    <div class="pr-section-title">Voortgang foto's</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px;">
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--card2);border:1px dashed var(--border);border-radius:10px;padding:16px;cursor:pointer;color:var(--muted2);font-size:13px;">
+        <span style="font-size:20px;">📸</span> Foto toevoegen
+        <input type="file" accept="image/*" capture="environment" onchange="addProgressPhoto(this)" style="display:none;">
+      </label>
+      <div id="photoGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+        ${(()=>{
+          const photos = await getProgressPhotos();
+          if (!photos.length) return `<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--muted);padding:8px 0;">Nog geen foto's toegevoegd</div>`;
+          return photos.slice().reverse().map((p, i) => `
+            <div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:3/4;">
+              <img src="${p.data}" style="width:100%;height:100%;object-fit:cover;">
+              <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.8));padding:8px 6px 6px;">
+                <div style="font-size:10px;color:#fff;font-weight:600;">${p.weight ? p.weight+'kg · ' : ''}${new Date(p.date).toLocaleDateString('nl-NL',{day:'numeric',month:'short'})}</div>
+              </div>
+              <button onclick="deletePhoto('${p._id}')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+            </div>
+          `).join('');
+        })()}
+      </div>
+    </div>
+
+    <div class="pr-section-title">Oefeningen</div>
+    ${exWithType.map(ex => {
+      const pr = prs[ex.id];
+      const history = getExHistory(ex.id);
+      const color = colorMap[ex.type];
+      const isSelected = selectedExercise === ex.id;
+      const trend = history.length >= 2 ? history[history.length-1].maxWeight - history[0].maxWeight : null;
+
+      return `<div id="exchart_${ex.id}" style="background:var(--card);border:1px solid ${isSelected?color:'var(--border)'};border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
+        <div onclick="toggleExerciseChart('${ex.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;">
+          <div>
+            <div style="font-size:13px;font-weight:500;">${ex.name}</div>
+            <div style="font-size:10px;color:var(--muted2);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">${ex.type} · ${history.length} sessie${history.length!==1?'s':''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            ${trend !== null ? `<span style="font-size:11px;color:${trend>=0?'#3dbd6e':'#e05c4b'};">${trend>=0?'+':''}${trend.toFixed(1)}kg</span>` : ''}
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${color};">${pr ? pr.weight+'kg' : '—'}</div>
+            <span style="font-size:14px;color:var(--muted);display:inline-block;transform:rotate(${isSelected?'90':'0'}deg);transition:transform 0.2s;">›</span>
+          </div>
+        </div>
+        ${isSelected ? `<div style="padding:0 14px 14px;border-top:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px;">Max gewicht per sessie (kg)</div>
+          ${drawChart(ex.id, color)}
+          ${history.length > 0 ? `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px;">
+            <div style="background:var(--card2);border-radius:8px;padding:8px;text-align:center;">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${color};">${history[history.length-1].maxWeight}kg</div>
+              <div style="font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;">Laatste</div>
+            </div>
+            <div style="background:var(--card2);border-radius:8px;padding:8px;text-align:center;">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${color};">${Math.max(...history.map(h=>h.maxWeight))}kg</div>
+              <div style="font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;">PR</div>
+            </div>
+            <div style="background:var(--card2);border-radius:8px;padding:8px;text-align:center;">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${color};">${history.length}</div>
+              <div style="font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;">Sessies</div>
+            </div>
+          </div>` : ''}
+        </div>` : ''}
+      </div>`;
+    }).join('')}
+
+    ${totalSessions === 0 ? `<div class="empty-state" style="margin-top:20px"><div class="empty-icon">🏆</div><p>Sla je eerste training op om je progressie te zien.</p></div>` : ''}
+  `;
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────────────
+async function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  btn.classList.add('active');
+
+  if (name === 'history') await renderHistory();
+  if (name === 'progress') await renderProgress();
+}
+
+
+
+// ─── EXERCISE INFO MODAL ──────────────────────────────────────────────────────
+function openExerciseInfo(exId, type) {
+  const info = EXERCISE_INFO[exId];
+  const workout = WORKOUTS[type];
+  const ex = [...(workout?.a||[]), ...(workout?.b||[])].find(e => e.id === exId);
+  if (!ex || !info) return;
+
+  const colors = {pull:'var(--pull)',push:'var(--push)',legs:'var(--legs)'};
+  const color = colors[type] || 'var(--warm)';
+  const ytQuery = encodeURIComponent(ex.name + ' dumbbell exercise tutorial');
+
+  const html = `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">${type.toUpperCase()} DAY</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:${color}">${ex.name}</div>
+      <div style="font-size:12px;color:var(--muted2);margin-top:2px;">🎯 ${info.focus}</div>
+    </div>
+
+    <a href="https://www.youtube.com/results?search_query=${ytQuery}" target="_blank"
+      style="display:flex;align-items:center;gap:10px;background:#1a0a0a;border:1px solid rgba(255,50,50,0.3);border-radius:10px;padding:12px 14px;text-decoration:none;margin-bottom:16px;">
+      <span style="font-size:22px;">▶️</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#ff4444;">Bekijk op YouTube</div>
+        <div style="font-size:11px;color:var(--muted2);margin-top:2px;">${ex.name} tutorial</div>
+      </div>
+      <span style="margin-left:auto;color:var(--muted);font-size:12px;">›</span>
+    </a>
+
+    <div style="font-size:11px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Uitvoering</div>
+    ${info.steps.map((step, i) => `
+      <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start;">
+        <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'Bebas Neue',sans-serif;color:${color};flex-shrink:0;">${i+1}</div>
+        <span style="font-size:13px;line-height:1.5;">${step}</span>
+      </div>
+    `).join('')}
+
+    <div style="margin-top:14px;background:rgba(224,92,75,0.08);border:1px solid rgba(224,92,75,0.2);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10px;color:#e05c4b;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">⚠️ Veelgemaakte fout</div>
+      <div style="font-size:12px;color:var(--text);">${info.mistake}</div>
+    </div>
+
+    <div style="margin-top:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10px;color:var(--muted2);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Schema</div>
+      <div style="font-size:13px;color:${color};font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">${ex.target}</div>
+    </div>
+  `;
+
+  document.getElementById('exInfoContent').innerHTML = html;
+  document.getElementById('exInfoOverlay').classList.add('open');
+}
+
+function closeExInfo(event) {
+  if (event.target === document.getElementById('exInfoOverlay')) {
+    document.getElementById('exInfoOverlay').classList.remove('open');
+  }
+}
+
+// ─── DAY MODAL ────────────────────────────────────────────────────────────────
+function openDayModal(dow) {
+  const dayNames = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+  const dayName = dayNames[dow];
+  const dayType = SCHEDULE[dow];
+  const colors = {pull:'var(--pull)',push:'var(--push)',legs:'var(--legs)'};
+  const accentColor = dayType ? colors[dayType] : 'var(--muted2)';
+
+  // Find most recent session for this dow
+  const allSessions = getSessions();
+  const pastSession = allSessions.slice().reverse().find(s => new Date(s.date).getDay() === dow);
+
+  const nextVar = dayType ? getVariantForToday(dayType) : null;
+  const showVar = pastSession ? (pastSession.variant || 'a') : nextVar;
+  let html = `<div style="margin-bottom:16px;">
+    <div style="font-size:11px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">${dayName}</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:${accentColor}">${dayType ? dayType.toUpperCase() + ' DAY' : 'RUSTDAG'}</div>
+      ${dayType ? `<div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:2px 10px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:var(--warm);">WORKOUT ${showVar.toUpperCase()}</div>` : ''}
+    </div>
+    ${dayType ? `<div style="font-size:12px;color:var(--muted2);margin-top:2px;">${WORKOUTS[dayType].muscles}</div>` : ''}
+  </div>`;
+
+  if (!dayType) {
+    html += `<div style="background:var(--card2);border-radius:10px;padding:16px;text-align:center;color:var(--muted2);font-size:13px;">
+      😴 Rustdag — herstel is onderdeel van het programma
+    </div>`;
+  } else if (pastSession) {
+    // Show what was done
+    html += `<div style="font-size:11px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Laatste sessie · ${formatDate(pastSession.date)}</div>`;
+    getExercises(dayType, pastSession ? getVariantForSession(pastSession) : nextVariant).forEach(ex => {
+      const sets = pastSession.data?.[ex.id] || [];
+      const doneSets = sets.filter(s => s.done && s.weight && s.reps);
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:13px;">${ex.name}</span>
+        <span style="font-size:12px;color:var(--muted2);">${doneSets.length ? doneSets.map(s=>`${s.weight}kg×${s.reps}`).join(' · ') : '—'}</span>
+      </div>`;
+    });
+  } else {
+    // Show what to do (schema preview)
+    html += `<div style="font-size:11px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Oefeningen — tik voor uitleg</div>`;
+    const nextVariant = getVariantForToday(dayType);
+    const modalExercises = pastSession ? getExercises(dayType, getVariantForSession(pastSession)) : getExercises(dayType, nextVariant);
+    modalExercises.forEach((ex, i) => {
+      html += `<div onclick="document.getElementById('dayModalOverlay').classList.remove('open');setTimeout(()=>openExerciseInfo('${ex.id}','${dayType}'),200)" style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-radius:8px;margin-bottom:2px;cursor:pointer;border:1px solid transparent;" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='transparent'">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;">${ex.name}</div>
+          <div style="font-size:11px;color:var(--muted2);margin-top:2px;">${ex.tip}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:12px;">
+          <span style="font-size:12px;color:${accentColor};font-family:'Bebas Neue',sans-serif;letter-spacing:1px;white-space:nowrap;">${ex.target}</span>
+          <span style="font-size:11px;color:var(--muted);">›</span>
+        </div>
+      </div>`;
+    });
+    html += `<div style="margin-top:12px;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--warm);">Nog geen sessie opgeslagen voor deze dag</div>`;
+  }
+
+  document.getElementById('dayModalContent').innerHTML = html;
+  document.getElementById('dayModalOverlay').classList.add('open');
+}
+
+function closeDayModal(event) {
+  if (event.target === document.getElementById('dayModalOverlay')) {
+    document.getElementById('dayModalOverlay').classList.remove('open');
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderToday();  // async, fires and forgets on load
+</script>
+</body>
+</html>

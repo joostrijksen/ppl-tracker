@@ -1422,7 +1422,7 @@ function drawWeightChart(wh) {
 let selectedExercise = null;
 
 function getExHistory(exId) {
-  return getSessions()
+  return (_sessionCache || [])
     .filter(s => s.data?.[exId])
     .map(s => {
       const sets = (s.data[exId]||[]).filter(set => set.done && set.weight && set.reps);

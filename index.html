@@ -575,17 +575,63 @@ body {
 .sync-dot.synced { background: var(--success); }
 .sync-dot.error { background: var(--push); }
 @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+
+#loginScreen {
+  position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; padding: 40px 32px;
+}
+#loginScreen .login-logo { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 4px; margin-bottom: 4px; }
+#loginScreen .login-sub { font-size: 13px; color: var(--muted2); margin-bottom: 48px; text-align: center; line-height: 1.6; }
+#loginScreen input {
+  width: 100%; background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 20px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 20px; text-align: center;
+  letter-spacing: 2px; margin-bottom: 12px; -webkit-appearance: none;
+}
+#loginScreen input:focus { outline: none; border-color: var(--warm); }
+#loginScreen button {
+  width: 100%; padding: 16px; background: var(--warm); border: none;
+  border-radius: 12px; color: #000; font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 2px; cursor: pointer; margin-bottom: 24px;
+}
+#loginScreen .login-hint { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
+.user-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(245,166,35,0.12); border: 1px solid rgba(245,166,35,0.3);
+  border-radius: 20px; padding: 4px 10px 4px 6px;
+  font-size: 12px; color: var(--warm); font-weight: 600; cursor: pointer;
+}
+.user-avatar {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--warm);
+  color: #000; font-family: 'Bebas Neue', sans-serif; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
 </style>
 </head>
 <body>
 
+<div id="loginScreen">
+  <div class="login-logo">PPL</div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--warm);margin-bottom:4px;">TRACKER</div>
+  <div class="login-sub">Voer je naam in om te beginnen.<br>Gebruik altijd dezelfde naam op elk apparaat.</div>
+  <input id="nameInput" type="text" placeholder="bijv. joost of sam" autocomplete="off" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')doLogin()">
+  <button onclick="doLogin()">START</button>
+  <div class="login-hint">Zelfde naam = zelfde data op elk apparaat</div>
+</div>
 <div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">laden...</span></div>
 <div class="app-header">
   <div>
     <div class="app-title">PPL TRACKER</div>
     <div class="app-date" id="headerDate"></div>
   </div>
-  <div class="streak-badge" id="streakBadge">🔥 <span id="streakCount">0</span> streak</div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="user-chip" onclick="showUserSwitch()">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span id="userName">...</span>
+    </div>
+    <div class="streak-badge" id="streakBadge">🔥 <span id="streakCount">0</span></div>
+  </div>
 </div>
 
 <!-- PAGES -->
@@ -628,22 +674,56 @@ body {
 
 
 <script>
+
+// LOGIN
+function doLogin() {
+  const input = document.getElementById('nameInput');
+  const name = input.value.trim();
+  if (!name || name.length < 2) {
+    input.style.borderColor = '#e05c4b';
+    setTimeout(() => input.style.borderColor = 'var(--border)', 1000);
+    return;
+  }
+  USER_ID = setUserId(name);
+  document.getElementById('loginScreen').style.display = 'none';
+  updateUserDisplay();
+  renderToday();
+}
+
+function updateUserDisplay() {
+  const name = USER_ID || '?';
+  const el = document.getElementById('userName');
+  const av = document.getElementById('userAvatar');
+  if (el) el.textContent = name;
+  if (av) av.textContent = name.charAt(0).toUpperCase();
+}
+
+function showUserSwitch() {
+  if (confirm('Wisselen van gebruiker? Je bent nu: ' + USER_ID)) {
+    localStorage.removeItem('ppl_uid');
+    _sessionCache = null; _prCache = null; _weightCache = null; _photoCache = null;
+    USER_ID = null;
+    const ls = document.getElementById('loginScreen');
+    ls.style.display = 'flex';
+    document.getElementById('nameInput').value = '';
+  }
+}
+
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://hrxtbbcjfzorbdlyxtut.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhyeHRiYmNqZnpvcmJkbHl4dHV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDc0ODYsImV4cCI6MjA5MzgyMzQ4Nn0.cRJGJbcfC9UzWC84TWogvgFtsaQIrvy4CbeapjyDlIc';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Simple user ID based on browser fingerprint (no auth needed)
+// Name-based user ID
 function getUserId() {
-  let uid = localStorage.getItem('ppl_uid');
-  if (!uid) {
-    uid = 'user_' + Math.random().toString(36).substr(2, 12);
-    localStorage.setItem('ppl_uid', uid);
-  }
+  return localStorage.getItem('ppl_uid') || null;
+}
+function setUserId(name) {
+  const uid = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  localStorage.setItem('ppl_uid', uid);
   return uid;
 }
-
-const USER_ID = getUserId();
+let USER_ID = getUserId();
 let _sessionCache = null;
 let _prCache = null;
 let _weightCache = null;
@@ -1783,7 +1863,13 @@ function closeDayModal(event) {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 (async () => {
-  await renderToday();
+  if (!USER_ID) {
+    document.getElementById('loginScreen').style.display = 'flex';
+    setTimeout(() => document.getElementById('nameInput').focus(), 100);
+  } else {
+    updateUserDisplay();
+    await renderToday();
+  }
 })();
 </script>
 </body>

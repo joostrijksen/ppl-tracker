@@ -644,6 +644,17 @@ function getUserId() {
 }
 
 const USER_ID = getUserId();
+let _sessionCache = null;
+let _prCache = null;
+let _weightCache = null;
+let _photoCache = null;
+
+async function invalidateCache() {
+  _sessionCache = null;
+  _prCache = null;
+  _weightCache = null;
+  _photoCache = null;
+}
 
 function setSyncStatus(status) {
   const dot = document.getElementById('syncDot');
@@ -655,13 +666,13 @@ function setSyncStatus(status) {
 
 // ─── STORAGE (Supabase + localStorage fallback) ───────────────────────────────
 async function getSessions() {
+  if (_sessionCache) return _sessionCache;
   try {
     const { data, error } = await sb.from('ppl_sessions').select('*').eq('user_id', USER_ID).order('date', { ascending: true });
     if (error) throw error;
-    // Convert to local format
-    return data.map(s => ({ date: s.date, type: s.type, variant: s.variant, data: s.data, _id: s.id }));
+    _sessionCache = data.map(s => ({ date: s.date, type: s.type, variant: s.variant, data: s.data, _id: s.id }));
+    return _sessionCache;
   } catch(e) {
-    // Fallback to localStorage
     return JSON.parse(localStorage.getItem('ppl_sessions') || '[]');
   }
 }
@@ -676,9 +687,9 @@ async function saveSession(sessionObj) {
       await sb.from('ppl_sessions').insert({ user_id: USER_ID, date: sessionObj.date, type: sessionObj.type, variant: sessionObj.variant, data: sessionObj.data });
     }
     setSyncStatus('synced');
+    _sessionCache = null;
   } catch(e) {
     setSyncStatus('error');
-    // Fallback localStorage
     const sessions = JSON.parse(localStorage.getItem('ppl_sessions') || '[]');
     const idx = sessions.findIndex(s => s.date === sessionObj.date);
     if (idx >= 0) sessions[idx] = sessionObj; else sessions.push(sessionObj);
@@ -862,14 +873,14 @@ function getExercises(type, variant) {
 
 // Determine A or B for today
 function getVariantForToday(type) {
-  const sessions = await getSessions().filter(s => s.type === type);
+  const sessions = (await getSessions()).filter(s => s.type === type);
   return sessions.length % 2 === 0 ? 'a' : 'b';
 }
 
 function getVariantForSession(session) {
   // stored in session, or derive from index
   if (session.variant) return session.variant;
-  const allOfType = getSessions().filter(s => s.type === session.type);
+  const allOfType = (_sessionCache || []).filter(s => s.type === session.type);
   const idx = allOfType.findIndex(s => s.date === session.date);
   return idx % 2 === 0 ? 'a' : 'b';
 }
@@ -1055,7 +1066,7 @@ function showToast(msg) {
 }
 
 async function getStreak() {
-  const sessions = await getSessions();
+  const sessions = _sessionCache || await getSessions();
   if (!sessions.length) return 0;
   let streak = 0;
   const dates = [...new Set(sessions.map(s => s.date))].sort().reverse();
@@ -1270,7 +1281,7 @@ let historyFilter = 'all';
 
 async function renderHistory() {
   const page = document.getElementById('pageHistory');
-  const sessions = await getSessions().slice().reverse();
+  const sessions = (await getSessions()).slice().reverse();
 
   const filtered = historyFilter === 'all' ? sessions : sessions.filter(s => s.type === historyFilter);
 
@@ -1734,7 +1745,9 @@ function closeDayModal(event) {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-renderToday();  // async, fires and forgets on load
+(async () => {
+  await renderToday();
+})();
 </script>
 </body>
 </html>

@@ -873,7 +873,7 @@ function getExercises(type, variant) {
 
 // Determine A or B for today
 function getVariantForToday(type) {
-  const sessions = (await getSessions()).filter(s => s.type === type);
+  const sessions = (_sessionCache || []).filter(s => s.type === type);
   return sessions.length % 2 === 0 ? 'a' : 'b';
 }
 
@@ -1130,7 +1130,7 @@ async function renderToday() {
           const dayType = SCHEDULE[dow];
           const colors = {pull:'var(--pull)',push:'var(--push)',legs:'var(--legs)'};
           const accentColor = dayType ? colors[dayType] : 'var(--muted)';
-          const allSessions = getSessions();
+          const allSessions = _sessionCache || [];
           const daySession = allSessions.slice().reverse().find(s => new Date(s.date).getDay() === dow);
           const hasDone = !!daySession;
           return `<div onclick="openDayModal(${dow})" style="display:flex;align-items:center;justify-content:space-between;padding:10px 8px;border-radius:8px;margin-bottom:2px;cursor:pointer;background:${isToday?'rgba(245,166,35,0.06)':'transparent'};border:1px solid ${isToday?'rgba(245,166,35,0.2)':'transparent'};" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${isToday?'rgba(245,166,35,0.06)':'transparent'}'">
@@ -1487,8 +1487,11 @@ async function toggleExerciseChart(exId) {
 
 async function renderProgress() {
   const page = document.getElementById('pageProgress');
+  // Pre-fetch all data before building template
   const sessions = await getSessions();
   const prs = await getPRs();
+  const weightHistory = await getWeightHistory();
+  const progressPhotos = await getProgressPhotos();
   const totalSessions = sessions.length;
   const totalSets = sessions.flatMap(s => Object.values(s.data||{})).flat().filter(s=>s.done).length;
   const streak = getStreak();
@@ -1519,7 +1522,7 @@ async function renderProgress() {
         <button onclick="saveWeight()" style="background:var(--warm);border:none;border-radius:8px;padding:10px 16px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer;white-space:nowrap;">OPSLAAN</button>
       </div>
       ${(()=>{
-        const wh = await getWeightHistory();
+        const wh = weightHistory;
         if (!wh.length) return `<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">Nog geen gewicht ingevoerd</div>`;
         const latest = wh[wh.length-1];
         const first = wh[0];
@@ -1546,7 +1549,7 @@ async function renderProgress() {
       </label>
       <div id="photoGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
         ${(()=>{
-          const photos = await getProgressPhotos();
+          const photos = progressPhotos;
           if (!photos.length) return `<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--muted);padding:8px 0;">Nog geen foto's toegevoegd</div>`;
           return photos.slice().reverse().map((p, i) => `
             <div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:3/4;">

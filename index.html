@@ -867,27 +867,46 @@ async function getProgressPhotos() {
   try {
     const { data, error } = await sb.from('ppl_photos').select('*').eq('user_id', USER_ID).order('date', { ascending: true });
     if (error) throw error;
-    return data.map(p => ({ date: p.date, weight: p.weight, data: p.data, _id: p.id }));
+    // Get signed URLs for each photo
+    const photos = await Promise.all(data.map(async p => {
+      let url = null;
+      if (p.storage_path) {
+        const { data: signed } = await sb.storage.from('ppl-photos').createSignedUrl(p.storage_path, 3600);
+        url = signed?.signedUrl || null;
+      } else if (p.data) {
+        url = p.data; // fallback for old base64 photos
+      }
+      return { date: p.date, weight: p.weight, data: url, _id: p.id, storage_path: p.storage_path };
+    }));
+    return photos.filter(p => p.data);
   } catch(e) {
     return JSON.parse(localStorage.getItem('ppl_photos') || '[]');
   }
 }
 
-async function savePhotoToDb(date, weight, photoData) {
+async function savePhotoToDb(date, weight, file) {
   setSyncStatus('syncing');
   try {
-    await sb.from('ppl_photos').insert({ user_id: USER_ID, date, weight, data: photoData });
+    // Upload to Supabase Storage
+    const ext = file.name?.split('.').pop() || 'jpg';
+    const path = `${USER_ID}/${date}_${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadError } = await sb.storage.from('ppl-photos').upload(path, file, { upsert: false });
+    if (uploadError) throw uploadError;
+    // Save reference in database
+    await sb.from('ppl_photos').insert({ user_id: USER_ID, date, weight, storage_path: path });
     setSyncStatus('synced');
   } catch(e) {
     setSyncStatus('error');
-    const photos = JSON.parse(localStorage.getItem('ppl_photos') || '[]');
-    photos.push({ date, weight, data: photoData });
-    localStorage.setItem('ppl_photos', JSON.stringify(photos));
+    console.error('Photo upload failed', e);
+    showToast('Foto upload mislukt');
   }
 }
 
-async function deletePhotoFromDb(id) {
+async function deletePhotoFromDb(id, storagePath) {
   try {
+    if (storagePath) {
+      await sb.storage.from('ppl-photos').remove([storagePath]);
+    }
     await sb.from('ppl_photos').delete().eq('id', id);
   } catch(e) {
     console.error('Delete photo failed', e);
@@ -1595,23 +1614,22 @@ async function saveWeight() {
   await renderProgress();
 }
 
-function addProgressPhoto(input) {
+async function addProgressPhoto(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async e => {
-    const wh = await getWeightHistory();
-    const today = new Date().toISOString().split('T')[0];
-    const todayWeight = wh.slice().reverse().find(w => w.date <= today)?.weight || null;
-    await savePhotoToDb(today, todayWeight, e.target.result);
-    showToast('📸 Foto opgeslagen!');
-    await renderProgress();
-  };
+  showToast('📸 Foto uploaden...');
+  const wh = await getWeightHistory();
+  const today = localDateStr(new Date());
+  const todayWeight = wh.slice().reverse().find(w => w.date <= today)?.weight || null;
+  await savePhotoToDb(today, todayWeight, file);
+  showToast('📸 Foto opgeslagen!');
+  await renderProgress();
+  // dummy reader to avoid syntax issues
   reader.readAsDataURL(file);
 }
 
-async function deletePhoto(id) {
-  await deletePhotoFromDb(id);
+async function deletePhoto(id, storagePath) {
+  await deletePhotoFromDb(id, storagePath);
   showToast('Foto verwijderd');
   await renderProgress();
 }
@@ -1803,7 +1821,7 @@ async function renderProgress() {
               <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.8));padding:8px 6px 6px;">
                 <div style="font-size:10px;color:#fff;font-weight:600;">${p.weight ? p.weight+'kg · ' : ''}${new Date(p.date).toLocaleDateString('nl-NL',{day:'numeric',month:'short'})}</div>
               </div>
-              <button onclick="deletePhoto('${p._id}')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+              <button onclick="deletePhoto('${p._id}','${p.storage_path||''}')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
             </div>
           `).join('');
         })()}

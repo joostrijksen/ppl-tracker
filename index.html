@@ -634,6 +634,17 @@ body {
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsOverlay" onclick="closeSettings(event)">
+  <div class="modal">
+    <h3>SCHEMA INSTELLEN</h3>
+    <div style="font-size:12px;color:var(--muted2);margin-bottom:16px;">Kies welke dagen jij traint en welke training.</div>
+    <div id="scheduleEditor"></div>
+    <button onclick="saveScheduleSettings()" style="width:100%;padding:14px;background:var(--warm);border:none;border-radius:10px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;margin-top:8px;">OPSLAAN</button>
+    <button class="modal-close" onclick="document.getElementById('settingsOverlay').classList.remove('open')">Sluiten</button>
+  </div>
+</div>
+
 <!-- PAGES -->
 <div id="pageTrain" class="page active"></div>
 <div id="pageHistory" class="page"></div>
@@ -649,6 +660,9 @@ body {
   </button>
   <button class="nav-btn" onclick="showPage('progress', this)">
     <span class="nav-icon">📈</span>Progressie
+  </button>
+  <button class="nav-btn" onclick="openSettings()">
+    <span class="nav-icon">⚙️</span>Schema
   </button>
 </nav>
 
@@ -685,6 +699,7 @@ function doLogin() {
     return;
   }
   USER_ID = setUserId(name);
+  loadUserSchedule();
   document.getElementById('loginScreen').style.display = 'none';
   updateUserDisplay();
   renderToday();
@@ -880,11 +895,46 @@ async function deletePhotoFromDb(id) {
 }
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
-const SCHEDULE = {
-  2: 'pull',  // dinsdag
-  5: 'push',  // vrijdag
-  0: 'legs'   // zondag
-};
+// Default schedule - overridden by user settings
+const DEFAULT_SCHEDULE = { 2: 'pull', 5: 'push', 0: 'legs' };
+
+async function getUserSchedule() {
+  // Try Supabase first
+  try {
+    const { data, error } = await sb.from('ppl_settings').select('schedule').eq('user_id', USER_ID).single();
+    if (data?.schedule) {
+      // Also cache locally
+      localStorage.setItem('ppl_schedule_' + USER_ID, JSON.stringify(data.schedule));
+      return data.schedule;
+    }
+  } catch(e) {}
+  // Fallback to localStorage
+  const stored = localStorage.getItem('ppl_schedule_' + USER_ID);
+  return stored ? JSON.parse(stored) : DEFAULT_SCHEDULE;
+}
+
+async function saveUserSchedule(schedule) {
+  // Save locally immediately
+  localStorage.setItem('ppl_schedule_' + USER_ID, JSON.stringify(schedule));
+  // Save to Supabase
+  try {
+    const { data } = await sb.from('ppl_settings').select('id').eq('user_id', USER_ID).single();
+    if (data) {
+      await sb.from('ppl_settings').update({ schedule }).eq('user_id', USER_ID);
+    } else {
+      await sb.from('ppl_settings').insert({ user_id: USER_ID, schedule });
+    }
+  } catch(e) {
+    console.error('Schedule save to Supabase failed', e);
+  }
+}
+
+// Dynamic SCHEDULE based on current user
+let SCHEDULE = DEFAULT_SCHEDULE;
+
+async function loadUserSchedule() {
+  SCHEDULE = await getUserSchedule();
+}
 
 const WORKOUTS = {
   pull: {
@@ -1148,14 +1198,41 @@ function showToast(msg) {
 async function getStreak() {
   const sessions = _sessionCache || await getSessions();
   if (!sessions.length) return 0;
+
+  // Training days: tuesday=2, friday=5, sunday=0
+  const TRAINING_DAYS = new Set(Object.keys(SCHEDULE).map(Number));
+
+  // Get all past training days (scheduled) up to and including today
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // Build list of scheduled training dates going back up to 90 days
+  const scheduledDates = [];
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    if (TRAINING_DAYS.has(d.getDay())) {
+      scheduledDates.push(d.toISOString().split('T')[0]);
+    }
+  }
+
+  // Set of dates where user actually trained
+  const trainedDates = new Set(sessions.map(s => s.date));
+
+  // Count consecutive scheduled days that were completed, starting from most recent
   let streak = 0;
-  const dates = [...new Set(sessions.map(s => s.date))].sort().reverse();
-  for (let i = 0; i < dates.length; i++) {
-    const d = new Date(dates[i]);
-    const expected = new Date();
-    expected.setDate(expected.getDate() - i);
-    if (d.toISOString().split('T')[0] === expected.toISOString().split('T')[0]) streak++;
-    else break;
+  for (const date of scheduledDates) {
+    // Skip today if it's a training day and not yet trained (day not over)
+    const dateObj = new Date(date);
+    dateObj.setHours(0,0,0,0);
+    if (dateObj.getTime() === today.getTime() && !trainedDates.has(date)) {
+      continue; // today not yet trained, skip but don't break
+    }
+    if (trainedDates.has(date)) {
+      streak++;
+    } else {
+      break; // missed a scheduled training day
+    }
   }
   return streak;
 }
@@ -1702,6 +1779,77 @@ async function showPage(name, btn) {
 
 
 
+
+// ─── SCHEDULE SETTINGS ───────────────────────────────────────────────────────
+async function openSettings() {
+  const schedule = await getUserSchedule();
+  const days = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
+  const dowMap = [1,2,3,4,5,6,0]; // index to JS day of week
+  const colors = {pull:'var(--pull)',push:'var(--push)',legs:'var(--legs)',rest:'var(--muted)'};
+
+  let html = '';
+  days.forEach((day, i) => {
+    const dow = dowMap[i];
+    const current = schedule[dow] || 'rest';
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;font-weight:500;">${day}</span>
+      <div style="display:flex;gap:6px;">
+        ${['pull','push','legs','rest'].map(t => `
+          <button onclick="setDayType(${dow},'${t}')" id="schbtn_${dow}_${t}"
+            style="padding:5px 10px;border-radius:6px;border:1px solid ${current===t?colors[t]:'var(--border)'};
+            background:${current===t?`rgba(${t==='pull'?'59,158,222':t==='push'?'224,92,75':t==='legs'?'61,189,110':'100,100,100'},0.15)`:'transparent'};
+            color:${current===t?colors[t]:'var(--muted)'};font-size:11px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;cursor:pointer;">
+            ${t.toUpperCase()}
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('scheduleEditor').innerHTML = html;
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+
+let tempSchedule = null;
+
+function setDayType(dow, type) {
+  if (!tempSchedule) tempSchedule = {...getUserSchedule()};
+  if (type === 'rest') {
+    delete tempSchedule[dow];
+  } else {
+    tempSchedule[dow] = type;
+  }
+  // Update button styles
+  ['pull','push','legs','rest'].forEach(t => {
+    const btn = document.getElementById(`schbtn_${dow}_${t}`);
+    if (!btn) return;
+    const colors = {pull:'var(--pull)',push:'var(--push)',legs:'var(--legs)',rest:'var(--muted)'};
+    const isActive = t === type;
+    btn.style.borderColor = isActive ? colors[t] : 'var(--border)';
+    btn.style.color = isActive ? colors[t] : 'var(--muted)';
+    const rgb = {pull:'59,158,222',push:'224,92,75',legs:'61,189,110',rest:'100,100,100'};
+    btn.style.background = isActive ? `rgba(${rgb[t]},0.15)` : 'transparent';
+  });
+}
+
+async function saveScheduleSettings() {
+  if (tempSchedule !== null) {
+    await saveUserSchedule(tempSchedule);
+    SCHEDULE = tempSchedule;
+    tempSchedule = null;
+  }
+  document.getElementById('settingsOverlay').classList.remove('open');
+  showToast('✅ Schema opgeslagen!');
+  await renderToday();
+}
+
+function closeSettings(event) {
+  if (event.target === document.getElementById('settingsOverlay')) {
+    tempSchedule = null;
+    document.getElementById('settingsOverlay').classList.remove('open');
+  }
+}
+
 // ─── EXERCISE INFO MODAL ──────────────────────────────────────────────────────
 function openExerciseInfo(exId, type) {
   const info = EXERCISE_INFO[exId];
@@ -1867,6 +2015,7 @@ function closeDayModal(event) {
     document.getElementById('loginScreen').style.display = 'flex';
     setTimeout(() => document.getElementById('nameInput').focus(), 100);
   } else {
+    loadUserSchedule();
     updateUserDisplay();
     await renderToday();
   }

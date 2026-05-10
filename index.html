@@ -1977,7 +1977,7 @@ async function savePin(pin) {
 async function showPinScreen(mode) {
   pinMode = mode;
   pinBuffer = '';
-  pinFirst = '';
+  if (mode !== 'confirm') pinFirst = ''; // bewaar pinFirst bij bevestigingsstap
   updatePinDots();
   document.getElementById('pinError').textContent = '';
 

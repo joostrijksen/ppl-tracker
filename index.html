@@ -1196,7 +1196,6 @@ function showToast(msg) {
 }
 
 function localDateStr(d) {
-  // Returns YYYY-MM-DD in local timezone (not UTC)
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -1204,43 +1203,31 @@ function localDateStr(d) {
 }
 
 async function getStreak() {
-  const sessions = _sessionCache || await getSessions();
-  if (!sessions.length) return 0;
+  try {
+    const { data, error } = await sb.from('ppl_streaks').select('streak').eq('user_id', USER_ID).single();
+    if (data && !error) return data.streak;
+  } catch(e) {}
+  return 0;
+}
 
-  const TRAINING_DAYS = new Set(Object.keys(SCHEDULE).map(Number));
-  if (!TRAINING_DAYS.size) return 0;
-
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const todayStr = localDateStr(today);
-
-  // Set of dates where user actually trained
-  const trainedDates = new Set(sessions.map(s => s.date));
-
-  // Build list of past scheduled training dates (newest first, up to 180 days)
-  const scheduledDates = [];
-  for (let i = 0; i < 180; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    if (TRAINING_DAYS.has(d.getDay())) {
-      scheduledDates.push(localDateStr(d));
-    }
-  }
-
-  // Count streak
-  let streak = 0;
-  for (const date of scheduledDates) {
-    const isToday = date === todayStr;
-    if (isToday && !trainedDates.has(date)) {
-      continue; // today not done yet - skip but don't break
-    }
-    if (trainedDates.has(date)) {
-      streak++;
+async function saveStreak(value) {
+  try {
+    const { data } = await sb.from('ppl_streaks').select('id').eq('user_id', USER_ID).single();
+    const today = localDateStr(new Date());
+    if (data) {
+      await sb.from('ppl_streaks').update({ streak: value, last_updated: today }).eq('user_id', USER_ID);
     } else {
-      break; // missed a past training day
+      await sb.from('ppl_streaks').insert({ user_id: USER_ID, streak: value, last_updated: today });
     }
+  } catch(e) {
+    console.error('Streak save failed', e);
   }
-  return streak;
+}
+
+async function incrementStreak() {
+  const current = await getStreak();
+  await saveStreak(current + 1);
+  return current + 1;
 }
 
 // ─── CURRENT SESSION STATE ────────────────────────────────────────────────────
@@ -1435,8 +1422,9 @@ async function autoSave(type) {
 
 async function finishWorkout(type) {
   await autoSave(type);
-  showToast('✅ Training opgeslagen!');
-  document.getElementById('streakCount').textContent = await getStreak();
+  const newStreak = await incrementStreak();
+  document.getElementById('streakCount').textContent = newStreak;
+  showToast('✅ Training opgeslagen! 🔥 ' + newStreak + ' streak');
 }
 
 // ─── HISTORY ─────────────────────────────────────────────────────────────────

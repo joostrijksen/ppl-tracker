@@ -1228,6 +1228,92 @@ async function incrementStreak() {
   return current + 1;
 }
 
+
+// ─── DONE SCREEN ──────────────────────────────────────────────────────────────
+function renderDoneScreen(type, workout, variant) {
+  const colors = {pull:'#3b9ede', push:'#e05c4b', legs:'#3dbd6e'};
+  const color = colors[type];
+  const dayNames = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+  const typeLabels = {pull:'PULL', push:'PUSH', legs:'LEGS'};
+
+  // Build next 7 days overview
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let weekHtml = '';
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dow = d.getDay();
+    const dayType = SCHEDULE[dow];
+    const typeColor = dayType ? colors[dayType] : 'var(--muted)';
+    const isTraining = !!dayType;
+    weekHtml += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${typeColor};opacity:${isTraining?1:0.3};flex-shrink:0;"></div>
+        <span style="font-size:13px;">${dayNames[dow]}</span>
+      </div>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:${typeColor};">${dayType ? typeLabels[dayType] : 'RUST'}</span>
+    </div>`;
+  }
+
+  return `
+    <div style="padding:20px 0 12px;text-align:center;">
+      <div style="font-size:64px;margin-bottom:12px;">✅</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:3px;color:${color};">KLAAR!</div>
+      <div style="font-size:14px;color:var(--muted2);margin-top:4px;">${workout.label} afgerond · Workout ${variant.toUpperCase()}</div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:12px;text-align:center;">
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Vandaag getraind</div>
+      <div style="display:flex;justify-content:center;gap:24px;">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:${color};" id="streakCountDone">🔥</div>
+          <div style="font-size:11px;color:var(--muted2);">Streak</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Komende 7 dagen</div>
+      ${weekHtml}
+    </div>
+
+    <button onclick="showTrainingAnyway()" style="width:100%;padding:14px;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);color:var(--muted2);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-bottom:8px;">
+      Toch training bekijken / aanpassen
+    </button>
+  `;
+}
+
+async function showTrainingAnyway() {
+  // Force show the training screen even if already done
+  const type = todayType();
+  if (!type) return;
+  const workout = WORKOUTS[type];
+  const prs = await getPRs();
+  const exercises = getExercises(type, currentVariant);
+  const page = document.getElementById('pageTrain');
+
+  page.innerHTML = `
+    <div class="today-header">
+      <div class="today-day-badge">
+        <div class="day-dot" style="background:${workout.color}"></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="today-label" style="color:${workout.color}">${workout.label}</div>
+            <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:3px 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--warm);">WORKOUT ${currentVariant.toUpperCase()}</div>
+          </div>
+          <div class="today-sub">${workout.muscles}</div>
+        </div>
+      </div>
+    </div>
+    <div id="exerciseList" class="${type}-day">
+      ${exercises.map((ex, idx) => renderExerciseCard(ex, idx, type, prs)).join('')}
+    </div>
+    <button class="finish-btn ${type}-day" onclick="finishWorkout('${type}')">TRAINING OPSLAAN ✓</button>
+    <div style="height:8px;"></div>
+  `;
+}
+
 // ─── CURRENT SESSION STATE ────────────────────────────────────────────────────
 let currentSessionData = {};
 
@@ -1298,11 +1384,19 @@ async function renderToday() {
     return;
   }
 
-  initSession(type);
+  await initSession(type);
   const workout = WORKOUTS[type];
   const prs = await getPRs();
   const variant = currentVariant;
   const exercises = getExercises(type, variant);
+
+  // Check if already trained today
+  const todayStr = localDateStr(new Date());
+  const alreadyDone = (await getSessions()).find(s => s.date === todayStr);
+  if (alreadyDone) {
+    page.innerHTML = renderDoneScreen(type, workout, variant);
+    return;
+  }
 
   page.innerHTML = `
     <div class="today-header">
@@ -1423,6 +1517,9 @@ async function finishWorkout(type) {
   const newStreak = await incrementStreak();
   document.getElementById('streakCount').textContent = newStreak;
   showToast('✅ Training opgeslagen! 🔥 ' + newStreak + ' streak');
+  // Show done screen
+  _sessionCache = null; // invalidate so done check picks up new session
+  await renderToday();
 }
 
 // ─── HISTORY ─────────────────────────────────────────────────────────────────

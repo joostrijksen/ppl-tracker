@@ -634,6 +634,33 @@ body {
   </div>
 </div>
 
+<!-- PIN SCREEN -->
+<div id="pinScreen">
+  <div class="pin-title" id="pinTitle">PINCODE</div>
+  <div class="pin-sub" id="pinSub">Voer je 4-cijferige pincode in</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-grid">
+    <button class="pin-btn" onclick="pinPress(1)">1</button>
+    <button class="pin-btn" onclick="pinPress(2)">2</button>
+    <button class="pin-btn" onclick="pinPress(3)">3</button>
+    <button class="pin-btn" onclick="pinPress(4)">4</button>
+    <button class="pin-btn" onclick="pinPress(5)">5</button>
+    <button class="pin-btn" onclick="pinPress(6)">6</button>
+    <button class="pin-btn" onclick="pinPress(7)">7</button>
+    <button class="pin-btn" onclick="pinPress(8)">8</button>
+    <button class="pin-btn" onclick="pinPress(9)">9</button>
+    <button class="pin-btn del" onclick="pinDel()">⌫</button>
+    <button class="pin-btn" onclick="pinPress(0)">0</button>
+    <button class="pin-btn del" onclick="pinClear()">✕</button>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsOverlay" onclick="closeSettings(event)">
   <div class="modal">
@@ -701,8 +728,14 @@ async function doLogin() {
   USER_ID = setUserId(name);
   await loadUserSchedule();
   document.getElementById('loginScreen').style.display = 'none';
-  updateUserDisplay();
-  renderToday();
+
+  // Check if PIN exists
+  const existingPin = await getStoredPin();
+  if (existingPin) {
+    await showPinScreen('verify');
+  } else {
+    await showPinScreen('create');
+  }
 }
 
 function updateUserDisplay() {
@@ -939,7 +972,8 @@ async function saveUserSchedule(schedule) {
     if (data) {
       await sb.from('ppl_settings').update({ schedule }).eq('user_id', USER_ID);
     } else {
-      await sb.from('ppl_settings').insert({ user_id: USER_ID, schedule });
+      const pin = await getStoredPin();
+      await sb.from('ppl_settings').insert({ user_id: USER_ID, schedule, pin: pin || null });
     }
   } catch(e) {
     console.error('Schedule save to Supabase failed', e);
@@ -1886,6 +1920,114 @@ async function showPage(name, btn) {
 
 
 
+
+
+// ─── PIN CODE ─────────────────────────────────────────────────────────────────
+let pinBuffer = '';
+let pinMode = 'verify'; // 'verify', 'create', 'confirm'
+let pinFirst = '';
+
+async function getStoredPin() {
+  try {
+    const { data } = await sb.from('ppl_settings').select('pin').eq('user_id', USER_ID).maybeSingle();
+    return data?.pin || null;
+  } catch(e) {
+    return localStorage.getItem('ppl_pin_' + USER_ID) || null;
+  }
+}
+
+async function savePin(pin) {
+  try {
+    const { data } = await sb.from('ppl_settings').select('id').eq('user_id', USER_ID).maybeSingle();
+    if (data) {
+      await sb.from('ppl_settings').update({ pin }).eq('user_id', USER_ID);
+    } else {
+      await sb.from('ppl_settings').insert({ user_id: USER_ID, pin, schedule: SCHEDULE });
+    }
+    localStorage.setItem('ppl_pin_' + USER_ID, pin);
+  } catch(e) {
+    localStorage.setItem('ppl_pin_' + USER_ID, pin);
+  }
+}
+
+async function showPinScreen(mode) {
+  pinMode = mode;
+  pinBuffer = '';
+  pinFirst = '';
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+
+  if (mode === 'create') {
+    document.getElementById('pinTitle').textContent = 'PINCODE AANMAKEN';
+    document.getElementById('pinSub').textContent = 'Kies een 4-cijferige pincode';
+  } else if (mode === 'confirm') {
+    document.getElementById('pinTitle').textContent = 'BEVESTIG PINCODE';
+    document.getElementById('pinSub').textContent = 'Voer je pincode nogmaals in';
+  } else {
+    document.getElementById('pinTitle').textContent = 'WELKOM ' + USER_ID.toUpperCase();
+    document.getElementById('pinSub').textContent = 'Voer je pincode in';
+  }
+
+  document.getElementById('pinScreen').style.display = 'flex';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.className = 'pin-dot' + (i < pinBuffer.length ? ' filled' : '');
+  }
+}
+
+async function pinPress(num) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += num;
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    await handlePinComplete();
+  }
+}
+
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+
+function pinClear() {
+  pinBuffer = '';
+  updatePinDots();
+}
+
+async function handlePinComplete() {
+  if (pinMode === 'verify') {
+    const stored = await getStoredPin();
+    if (pinBuffer === stored) {
+      document.getElementById('pinScreen').style.display = 'none';
+      updateUserDisplay();
+      await renderToday();
+    } else {
+      // Wrong PIN
+      for (let i = 0; i < 4; i++) document.getElementById('pd' + i).className = 'pin-dot error';
+      document.getElementById('pinError').textContent = 'Onjuiste pincode';
+      setTimeout(() => { pinBuffer = ''; updatePinDots(); document.getElementById('pinError').textContent = ''; }, 1000);
+    }
+  } else if (pinMode === 'create') {
+    pinFirst = pinBuffer;
+    pinBuffer = '';
+    await showPinScreen('confirm');
+  } else if (pinMode === 'confirm') {
+    if (pinBuffer === pinFirst) {
+      await savePin(pinBuffer);
+      document.getElementById('pinScreen').style.display = 'none';
+      updateUserDisplay();
+      await renderToday();
+      showToast('✅ Pincode ingesteld!');
+    } else {
+      for (let i = 0; i < 4; i++) document.getElementById('pd' + i).className = 'pin-dot error';
+      document.getElementById('pinError').textContent = 'Pincodes komen niet overeen';
+      setTimeout(() => { pinBuffer = ''; pinFirst = ''; showPinScreen('create'); }, 1200);
+    }
+  }
+}
 
 // ─── SCHEDULE SETTINGS ───────────────────────────────────────────────────────
 async function openSettings() {

@@ -1195,6 +1195,14 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+function localDateStr(d) {
+  // Returns YYYY-MM-DD in local timezone (not UTC)
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
 async function getStreak() {
   const sessions = _sessionCache || await getSessions();
   if (!sessions.length) return 0;
@@ -1204,6 +1212,7 @@ async function getStreak() {
 
   const today = new Date();
   today.setHours(0,0,0,0);
+  const todayStr = localDateStr(today);
 
   // Set of dates where user actually trained
   const trainedDates = new Set(sessions.map(s => s.date));
@@ -1214,23 +1223,21 @@ async function getStreak() {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     if (TRAINING_DAYS.has(d.getDay())) {
-      scheduledDates.push(d.toISOString().split('T')[0]);
+      scheduledDates.push(localDateStr(d));
     }
   }
 
-  // Count streak - skip today if not yet trained (still counts as valid)
+  // Count streak
   let streak = 0;
-  let skippedToday = false;
   for (const date of scheduledDates) {
-    const isToday = date === today.toISOString().split('T')[0];
+    const isToday = date === todayStr;
     if (isToday && !trainedDates.has(date)) {
-      skippedToday = true;
-      continue; // today not done yet - skip, don't break
+      continue; // today not done yet - skip but don't break
     }
     if (trainedDates.has(date)) {
       streak++;
     } else {
-      break; // missed a past training day - streak broken
+      break; // missed a past training day
     }
   }
   return streak;

@@ -690,7 +690,7 @@ body {
 <script>
 
 // LOGIN
-function doLogin() {
+async function doLogin() {
   const input = document.getElementById('nameInput');
   const name = input.value.trim();
   if (!name || name.length < 2) {
@@ -699,7 +699,7 @@ function doLogin() {
     return;
   }
   USER_ID = setUserId(name);
-  loadUserSchedule();
+  await loadUserSchedule();
   document.getElementById('loginScreen').style.display = 'none';
   updateUserDisplay();
   renderToday();
@@ -1199,16 +1199,18 @@ async function getStreak() {
   const sessions = _sessionCache || await getSessions();
   if (!sessions.length) return 0;
 
-  // Training days: tuesday=2, friday=5, sunday=0
   const TRAINING_DAYS = new Set(Object.keys(SCHEDULE).map(Number));
+  if (!TRAINING_DAYS.size) return 0;
 
-  // Get all past training days (scheduled) up to and including today
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  // Build list of scheduled training dates going back up to 90 days
+  // Set of dates where user actually trained
+  const trainedDates = new Set(sessions.map(s => s.date));
+
+  // Build list of past scheduled training dates (newest first, up to 180 days)
   const scheduledDates = [];
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 180; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     if (TRAINING_DAYS.has(d.getDay())) {
@@ -1216,22 +1218,19 @@ async function getStreak() {
     }
   }
 
-  // Set of dates where user actually trained
-  const trainedDates = new Set(sessions.map(s => s.date));
-
-  // Count consecutive scheduled days that were completed, starting from most recent
+  // Count streak - skip today if not yet trained (still counts as valid)
   let streak = 0;
+  let skippedToday = false;
   for (const date of scheduledDates) {
-    // Skip today if it's a training day and not yet trained (day not over)
-    const dateObj = new Date(date);
-    dateObj.setHours(0,0,0,0);
-    if (dateObj.getTime() === today.getTime() && !trainedDates.has(date)) {
-      continue; // today not yet trained, skip but don't break
+    const isToday = date === today.toISOString().split('T')[0];
+    if (isToday && !trainedDates.has(date)) {
+      skippedToday = true;
+      continue; // today not done yet - skip, don't break
     }
     if (trainedDates.has(date)) {
       streak++;
     } else {
-      break; // missed a scheduled training day
+      break; // missed a past training day - streak broken
     }
   }
   return streak;
@@ -2015,7 +2014,7 @@ function closeDayModal(event) {
     document.getElementById('loginScreen').style.display = 'flex';
     setTimeout(() => document.getElementById('nameInput').focus(), 100);
   } else {
-    loadUserSchedule();
+    await loadUserSchedule();
     updateUserDisplay();
     await renderToday();
   }

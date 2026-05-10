@@ -1390,8 +1390,10 @@ async function renderToday() {
   const type = todayType();
 
   // Header date
-  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
-  document.getElementById('streakCount').textContent = await getStreak();
+  const headerDate = document.getElementById('headerDate');
+  if (headerDate) headerDate.textContent = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const streakEl = document.getElementById('streakCount');
+  if (streakEl) streakEl.textContent = await getStreak();
 
   if (!type) {
     page.innerHTML = `

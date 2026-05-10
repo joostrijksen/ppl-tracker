@@ -899,11 +899,9 @@ async function deletePhotoFromDb(id) {
 const DEFAULT_SCHEDULE = { 2: 'pull', 5: 'push', 0: 'legs' };
 
 async function getUserSchedule() {
-  // Try Supabase first
   try {
-    const { data, error } = await sb.from('ppl_settings').select('schedule').eq('user_id', USER_ID).single();
+    const { data, error } = await sb.from('ppl_settings').select('schedule').eq('user_id', USER_ID).maybeSingle();
     if (data?.schedule) {
-      // Also cache locally
       localStorage.setItem('ppl_schedule_' + USER_ID, JSON.stringify(data.schedule));
       return data.schedule;
     }
@@ -918,7 +916,7 @@ async function saveUserSchedule(schedule) {
   localStorage.setItem('ppl_schedule_' + USER_ID, JSON.stringify(schedule));
   // Save to Supabase
   try {
-    const { data } = await sb.from('ppl_settings').select('id').eq('user_id', USER_ID).single();
+    const { data } = await sb.from('ppl_settings').select('id').eq('user_id', USER_ID).maybeSingle();
     if (data) {
       await sb.from('ppl_settings').update({ schedule }).eq('user_id', USER_ID);
     } else {
@@ -1204,7 +1202,7 @@ function localDateStr(d) {
 
 async function getStreak() {
   try {
-    const { data, error } = await sb.from('ppl_streaks').select('streak').eq('user_id', USER_ID).single();
+    const { data, error } = await sb.from('ppl_streaks').select('streak').eq('user_id', USER_ID).maybeSingle();
     if (data && !error) return data.streak;
   } catch(e) {}
   return 0;
@@ -1212,7 +1210,7 @@ async function getStreak() {
 
 async function saveStreak(value) {
   try {
-    const { data } = await sb.from('ppl_streaks').select('id').eq('user_id', USER_ID).single();
+    const { data } = await sb.from('ppl_streaks').select('id').eq('user_id', USER_ID).maybeSingle();
     const today = localDateStr(new Date());
     if (data) {
       await sb.from('ppl_streaks').update({ streak: value, last_updated: today }).eq('user_id', USER_ID);

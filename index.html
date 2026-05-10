@@ -579,23 +579,18 @@ body {
 #loginScreen {
   position: fixed; inset: 0; background: var(--bg); z-index: 1000;
   display: none; flex-direction: column; align-items: center;
-  justify-content: center; padding: 40px 32px;
+  justify-content: center; padding: 48px 28px;
+  min-height: 100vh; min-height: 100dvh;
 }
-#loginScreen .login-logo { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 4px; margin-bottom: 4px; }
-#loginScreen .login-sub { font-size: 13px; color: var(--muted2); margin-bottom: 48px; text-align: center; line-height: 1.6; }
-#loginScreen input {
-  width: 100%; background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px 20px; color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-size: 20px; text-align: center;
-  letter-spacing: 2px; margin-bottom: 12px; -webkit-appearance: none;
+#loginScreen .login-logo {
+  font-family: 'Bebas Neue', sans-serif; font-size: 56px;
+  letter-spacing: 4px; color: var(--text); margin-bottom: 2px;
+  line-height: 1;
 }
-#loginScreen input:focus { outline: none; border-color: var(--warm); }
-#loginScreen button {
-  width: 100%; padding: 16px; background: var(--warm); border: none;
-  border-radius: 12px; color: #000; font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px; letter-spacing: 2px; cursor: pointer; margin-bottom: 24px;
+#loginStepPin {
+  display: none; width: 100%; max-width: 320px;
+  flex-direction: column; align-items: center;
 }
-#loginScreen .login-hint { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
 .user-chip {
   display: flex; align-items: center; gap: 6px;
   background: rgba(245,166,35,0.12); border: 1px solid rgba(245,166,35,0.3);
@@ -611,55 +606,50 @@ body {
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
 <div id="loginScreen">
-  <div class="login-logo">PPL</div>
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--warm);margin-bottom:4px;">TRACKER</div>
-  <div class="login-sub">Voer je naam in om te beginnen.<br>Gebruik altijd dezelfde naam op elk apparaat.</div>
-  <input id="nameInput" type="text" placeholder="bijv. joost of sam" autocomplete="off" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')doLogin()">
-  <button onclick="doLogin()">START</button>
-  <div class="login-hint">Zelfde naam = zelfde data op elk apparaat</div>
-</div>
-<div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">laden...</span></div>
-<div class="app-header">
-  <div>
-    <div class="app-title">PPL TRACKER</div>
-    <div class="app-date" id="headerDate"></div>
+  <div class="login-logo">PPL<span style="color:var(--warm)">.</span></div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;color:var(--muted2);margin-bottom:48px;">TRACKER</div>
+
+  <!-- Stap 1: Naam -->
+  <div id="loginStepName" style="width:100%;max-width:300px;">
+    <div style="font-size:11px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;text-align:center;">Wie ben jij?</div>
+    <input id="nameInput" type="text" placeholder="Voer je naam in" autocomplete="off" autocorrect="off" autocapitalize="off"
+      onkeydown="if(event.key==='Enter')doNameStep()"
+      style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:18px;text-align:center;letter-spacing:1px;margin-bottom:12px;-webkit-appearance:none;outline:none;box-sizing:border-box;">
+    <button onclick="doNameStep()" style="width:100%;padding:16px;background:var(--warm);border:none;border-radius:14px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;">VERDER →</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:16px;line-height:1.6;">Gebruik altijd dezelfde naam<br>op elk apparaat</div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px;">
-    <div class="user-chip" onclick="showUserSwitch()">
-      <div class="user-avatar" id="userAvatar">?</div>
-      <span id="userName">...</span>
+
+  <!-- Stap 2: PIN -->
+  <div id="loginStepPin" style="display:none;width:100%;max-width:300px;flex-direction:column;align-items:center;">
+    <div style="font-size:13px;color:var(--muted2);margin-bottom:4px;text-align:center;" id="pinWelcome"></div>
+    <div class="pin-title" id="pinTitle">PINCODE</div>
+    <div class="pin-sub" id="pinSub">Voer je pincode in</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
     </div>
-    <div class="streak-badge" id="streakBadge">🔥 <span id="streakCount">0</span></div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="pinPress(1)">1</button>
+      <button class="pin-btn" onclick="pinPress(2)">2</button>
+      <button class="pin-btn" onclick="pinPress(3)">3</button>
+      <button class="pin-btn" onclick="pinPress(4)">4</button>
+      <button class="pin-btn" onclick="pinPress(5)">5</button>
+      <button class="pin-btn" onclick="pinPress(6)">6</button>
+      <button class="pin-btn" onclick="pinPress(7)">7</button>
+      <button class="pin-btn" onclick="pinPress(8)">8</button>
+      <button class="pin-btn" onclick="pinPress(9)">9</button>
+      <button class="pin-btn del" onclick="goBackToName()" title="Terug">←</button>
+      <button class="pin-btn" onclick="pinPress(0)">0</button>
+      <button class="pin-btn del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-error" id="pinError"></div>
   </div>
 </div>
 
-<!-- PIN SCREEN -->
-<div id="pinScreen">
-  <div class="pin-title" id="pinTitle">PINCODE</div>
-  <div class="pin-sub" id="pinSub">Voer je 4-cijferige pincode in</div>
-  <div class="pin-dots">
-    <div class="pin-dot" id="pd0"></div>
-    <div class="pin-dot" id="pd1"></div>
-    <div class="pin-dot" id="pd2"></div>
-    <div class="pin-dot" id="pd3"></div>
-  </div>
-  <div class="pin-grid">
-    <button class="pin-btn" onclick="pinPress(1)">1</button>
-    <button class="pin-btn" onclick="pinPress(2)">2</button>
-    <button class="pin-btn" onclick="pinPress(3)">3</button>
-    <button class="pin-btn" onclick="pinPress(4)">4</button>
-    <button class="pin-btn" onclick="pinPress(5)">5</button>
-    <button class="pin-btn" onclick="pinPress(6)">6</button>
-    <button class="pin-btn" onclick="pinPress(7)">7</button>
-    <button class="pin-btn" onclick="pinPress(8)">8</button>
-    <button class="pin-btn" onclick="pinPress(9)">9</button>
-    <button class="pin-btn del" onclick="pinDel()">⌫</button>
-    <button class="pin-btn" onclick="pinPress(0)">0</button>
-    <button class="pin-btn del" onclick="pinClear()">✕</button>
-  </div>
-  <div class="pin-error" id="pinError"></div>
-</div>
 
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settingsOverlay" onclick="closeSettings(event)">
@@ -718,16 +708,20 @@ body {
 
 // LOGIN
 async function doLogin() {
+  await doNameStep();
+}
+
+async function doNameStep() {
   const input = document.getElementById('nameInput');
   const name = input.value.trim();
   if (!name || name.length < 2) {
     input.style.borderColor = '#e05c4b';
-    setTimeout(() => input.style.borderColor = 'var(--border)', 1000);
+    input.style.borderWidth = '2px';
+    setTimeout(() => { input.style.borderColor = 'var(--border)'; input.style.borderWidth = '1px'; }, 1000);
     return;
   }
   USER_ID = setUserId(name);
   await loadUserSchedule();
-  document.getElementById('loginScreen').style.display = 'none';
 
   // Check if PIN exists
   const existingPin = await getStoredPin();
@@ -1957,18 +1951,34 @@ async function showPinScreen(mode) {
   updatePinDots();
   document.getElementById('pinError').textContent = '';
 
+  // Show login screen with pin step
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginStepName').style.display = 'none';
+  const pinStep = document.getElementById('loginStepPin');
+  pinStep.style.display = 'flex';
+
+  const welcome = document.getElementById('pinWelcome');
+  if (welcome) welcome.textContent = 'Welkom, ' + USER_ID;
+
   if (mode === 'create') {
-    document.getElementById('pinTitle').textContent = 'PINCODE AANMAKEN';
-    document.getElementById('pinSub').textContent = 'Kies een 4-cijferige pincode';
+    document.getElementById('pinTitle').textContent = 'KIES PINCODE';
+    document.getElementById('pinSub').textContent = 'Maak een 4-cijferige pincode aan';
   } else if (mode === 'confirm') {
-    document.getElementById('pinTitle').textContent = 'BEVESTIG PINCODE';
+    document.getElementById('pinTitle').textContent = 'BEVESTIG';
     document.getElementById('pinSub').textContent = 'Voer je pincode nogmaals in';
   } else {
-    document.getElementById('pinTitle').textContent = 'WELKOM ' + USER_ID.toUpperCase();
+    document.getElementById('pinTitle').textContent = 'PINCODE';
     document.getElementById('pinSub').textContent = 'Voer je pincode in';
   }
+}
 
-  document.getElementById('pinScreen').style.display = 'flex';
+function goBackToName() {
+  pinBuffer = '';
+  pinFirst = '';
+  document.getElementById('loginStepName').style.display = 'block';
+  document.getElementById('loginStepPin').style.display = 'none';
+  localStorage.removeItem('ppl_uid');
+  USER_ID = null;
 }
 
 function updatePinDots() {
@@ -2001,7 +2011,7 @@ async function handlePinComplete() {
   if (pinMode === 'verify') {
     const stored = await getStoredPin();
     if (pinBuffer === stored) {
-      document.getElementById('pinScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'none';
       updateUserDisplay();
       await renderToday();
     } else {
@@ -2017,7 +2027,7 @@ async function handlePinComplete() {
   } else if (pinMode === 'confirm') {
     if (pinBuffer === pinFirst) {
       await savePin(pinBuffer);
-      document.getElementById('pinScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'none';
       updateUserDisplay();
       await renderToday();
       showToast('✅ Pincode ingesteld!');

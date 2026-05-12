@@ -1339,9 +1339,43 @@ async function saveStreak(value) {
 }
 
 async function incrementStreak() {
-  const current = await getStreak();
-  await saveStreak(current + 1);
-  return current + 1;
+  // Check if streak already incremented today
+  try {
+    const { data } = await sb.from('ppl_streaks').select('streak, last_updated').eq('user_id', USER_ID).maybeSingle();
+    const today = localDateStr(new Date());
+    if (data && data.last_updated === today) {
+      return data.streak; // already incremented today, don't add again
+    }
+    // Check for missed training days - reset streak if needed
+    const sessions = _sessionCache || await getSessions();
+    const TRAINING_DAYS = new Set(Object.keys(SCHEDULE).map(Number));
+    const trainedDates = new Set(sessions.map(s => s.date));
+    // Check yesterday and before for missed days
+    let missedDay = false;
+    for (let i = 1; i <= 60; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = localDateStr(d);
+      if (dateStr === today) continue;
+      if (TRAINING_DAYS.has(d.getDay())) {
+        if (!trainedDates.has(dateStr)) {
+          missedDay = true;
+        }
+        break; // only check most recent past training day
+      }
+    }
+    if (missedDay) {
+      await saveStreak(1);
+      return 1;
+    }
+    const current = data ? data.streak : 0;
+    await saveStreak(current + 1);
+    return current + 1;
+  } catch(e) {
+    const current = await getStreak();
+    await saveStreak(current + 1);
+    return current + 1;
+  }
 }
 
 

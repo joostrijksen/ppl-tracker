@@ -1704,6 +1704,7 @@ async function addProgressPhoto(input) {
 }
 
 async function deletePhoto(id, storagePath) {
+  if (!confirm('Weet je zeker dat je deze foto wilt verwijderen?')) return;
   await deletePhotoFromDb(id, storagePath);
   showToast('Foto verwijderd');
   await renderProgress();

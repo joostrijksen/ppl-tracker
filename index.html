@@ -687,6 +687,23 @@ body {
     <div id="scheduleEditor"></div>
     <button onclick="saveScheduleSettings()" style="width:100%;padding:14px;background:var(--warm);border:none;border-radius:10px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;margin-top:8px;">OPSLAAN</button>
     <button class="modal-close" onclick="document.getElementById('settingsOverlay').classList.remove('open')">Sluiten</button>
+    <button onclick="doLogout()" style="width:100%;padding:12px;background:transparent;border:1px solid rgba(224,92,75,0.3);border-radius:10px;color:#e05c4b;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-top:6px;">🚪 Uitloggen</button>
+  </div>
+</div>
+
+<div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncLabel"></span></div>
+
+<div class="app-header">
+  <div>
+    <div class="app-title">PPL TRACKER</div>
+    <div class="app-date" id="headerDate"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="user-chip" onclick="showUserSwitch()">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span id="userName">...</span>
+    </div>
+    <div class="streak-badge" id="streakBadge">🔥 <span id="streakCount">0</span></div>
   </div>
 </div>
 
@@ -769,14 +786,19 @@ function updateUserDisplay() {
 }
 
 function showUserSwitch() {
-  if (confirm('Wisselen van gebruiker? Je bent nu: ' + USER_ID)) {
-    localStorage.removeItem('ppl_uid');
-    _sessionCache = null; _prCache = null; _weightCache = null; _photoCache = null;
-    USER_ID = null;
-    const ls = document.getElementById('loginScreen');
-    ls.style.display = 'flex';
-    document.getElementById('nameInput').value = '';
-  }
+  openSettings();
+}
+
+function doLogout() {
+  if (!confirm('Wil je uitloggen?')) return;
+  localStorage.removeItem('ppl_uid');
+  _sessionCache = null; _prCache = null; _weightCache = null; _photoCache = null;
+  USER_ID = null;
+  document.getElementById('settingsOverlay').classList.remove('open');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginStepName').style.display = 'block';
+  document.getElementById('loginStepPin').style.display = 'none';
+  document.getElementById('nameInput').value = '';
 }
 
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────

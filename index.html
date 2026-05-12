@@ -963,7 +963,7 @@ async function savePhotoToDb(date, weight, file) {
     console.log('Upload success:', uploadData);
 
     // Save reference in database
-    const { error: dbError } = await sb.from('ppl_photos').insert({ user_id: USER_ID, date, weight, storage_path: path });
+    const { error: dbError } = await sb.from('ppl_photos').insert({ user_id: USER_ID, date, weight, storage_path: path, data: '' });
     if (dbError) {
       console.error('DB insert error:', dbError);
       throw dbError;
@@ -1701,7 +1701,6 @@ async function addProgressPhoto(input) {
   const todayWeight = wh.slice().reverse().find(w => w.date <= today)?.weight || null;
   await savePhotoToDb(today, todayWeight, file);
   await renderProgress();
-  // dummy reader to avoid syntax issues
   reader.readAsDataURL(file);
 }
 

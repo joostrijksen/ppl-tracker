@@ -1701,7 +1701,6 @@ async function addProgressPhoto(input) {
   const todayWeight = wh.slice().reverse().find(w => w.date <= today)?.weight || null;
   await savePhotoToDb(today, todayWeight, file);
   await renderProgress();
-  reader.readAsDataURL(file);
 }
 
 async function deletePhoto(id, storagePath) {
